@@ -18,7 +18,7 @@
             <v-spacer></v-spacer>
             <v-toolbar-items>
                 <v-btn v-for="(item,i) in menuItems" text :key="`menuItem${i}`" :to="item.route">
-        <!--          <v-icon left>item.icon</v-icon> -->
+                    <v-icon left>{{item.icon}}</v-icon> 
                     {{item.title}} 
                 </v-btn>
             </v-toolbar-items>
@@ -37,30 +37,30 @@
             menuItems(){
                 return [
                     {
-                        icon: 'visibility',
+                        icon: 'mdi-calendar-text',
                         title: 'График',
                         route: '/chart'
                     },
                     {
-                        icon: 'extension',
+                        icon: 'mdi-human-greeting',
                         title: 'Сотрудники',
                         route: '/employees'
                     },
                     {
-                        icon: 'account_circle',
+                        icon: 'mdi-trending-up',
                         title: 'Эффективность',
                         route: '/efficiency'
                     },
                     {
-                        icon: 'exit_to_app',
-                        title: 'Выйти',
-                        route: '/logout'
-                    },
-                    {
-                        icon: 'input',
+                        icon: 'mdi-login',
                         title: 'Войти',
                         route: '/login'
-                    }
+                    },
+                    {
+                        icon: 'mdi-logout',
+                        title: 'Выйти',
+                        route: '/logout'
+                    }                    
                 ]
             }
         }        
