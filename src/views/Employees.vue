@@ -1,13 +1,12 @@
 <template>
   <v-app>
-    <!--
+    
     <div class="text-xs-center">
       <v-dialog v-model="dialog" max-width="500px" data-app>
         <v-card>
           <v-card-title>
             <span class="headline">{{ formTitle }}</span>
           </v-card-title>
-
           <v-card-text>
             <v-container grid-list-md>
               <v-layout wrap>
@@ -21,7 +20,6 @@
               </v-layout>
             </v-container>
           </v-card-text>
-
           <v-card-actions>
             <v-spacer></v-spacer>
             <v-btn color="red darken-1" text @click="close">Отмена</v-btn>
@@ -31,15 +29,13 @@
       </v-dialog>
     </div>
 
--->
-    <h1>{{Employees}}</h1>
     <v-card color="grey lighten-4" flat height="200px" tile>
       <v-toolbar>
         <v-toolbar-title>Сотрудники</v-toolbar-title>
         <v-spacer></v-spacer>
         <v-text-field
           v-model="searchTerm"
-          prepend-icon="search"
+          prepend-icon="mdi-account-search"
           label="Поиск"
           single-line
           hide-details
@@ -81,8 +77,8 @@
         <!-- у таблицы есть несколько предопределенных слотов, скрытых элментов, которым можно
         описать шаблон и выводить при опреденных событиях-->
         <template v-slot:item.action="{ item }">
-          <v-icon class="mr-2" @click="selectEmployee(item)">edit</v-icon>
-          <v-icon @click="deleteEmployee(item)">delete_forever</v-icon>
+          <v-icon class="mr-2" @click="selectEmployee(item)">mdi-pencil</v-icon>
+          <v-icon @click="deleteEmployee(item)">mdi-delete</v-icon>
         </template>
         <!-- этот при раскрытии дополлнительной строки-->
         <template v-slot:expanded-item="{ headers, item }">
@@ -90,13 +86,13 @@
         </template>
         <!--если нет данных при поиске -->
         <template v-slot:no-results>
-          <v-alert :value="true" color="orange" icon="warning"
+          <v-alert :value="true" color="orange" icon="mdi-linux"
             >По фразе "{{ searchTerm }}" ничего не найдено.</v-alert
           >
         </template>
         <!--Если бекенд не вернул ничего -->
         <template v-slot:no-data>
-            <v-alert :value="true" color="error" icon="warning">
+            <v-alert :value="true" color="error" icon="mdi-linux">
                 Нет данных.
             </v-alert>
         </template>
@@ -115,14 +111,14 @@
     >
       {{ snackbar.text }}
       <v-btn fab flat :color="snackbar.color" @click="snackbar.show = false">
-        <v-icon dark>close</v-icon>
+        <v-icon dark>mdi-close</v-icon>
       </v-btn>
     </v-snackbar>
   </v-app>
 </template>
 
 <script>
-// вынес все запросы в отдельный файл
+// Import queries from queries.js
 import {
     ALL_EMPLOYEES_QUERY,
     ADD_EMPLOYEE_MUTATION,
@@ -164,16 +160,22 @@ export default {
                 // у vuetify таблицы более богатые возможности
                 // описания заголовков столбцов
                 {
-                text: "Id", // название в интерфейсе
-                align: "left", // выравнивание
-                sortable: true, // возможность сортировки
-                value: "id" // поле в базе
-                },
-                {
                 text: "ФИО",
                 align: "left",
                 sortable: true,
                 value: "fullName"
+                },
+                {
+                text: "Цвет", // название в интерфейсе
+                align: "center", // выравнивание
+                sortable: false, // возможность сортировки
+                value: "visibleColor" // поле в базе
+                },
+                {
+                text: "Дежурный", // название в интерфейсе
+                align: "left", // выравнивание
+                sortable: true, // возможность сортировки
+                value: "isRegular" // поле в базе
                 },
                 // это фиктивный столбец, для инструментов правки и удаления
                 // обязательно нужно указать имя столбца, это имя используется в slot для вывода

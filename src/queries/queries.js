@@ -21,7 +21,7 @@ export const fragmentE = gql`
 
 export const ALL_SHIFTS_QUERY = gql`
 query Shifts {
-    getShifts {
+    Shifts {
         id,
         start,
         end,
@@ -33,12 +33,13 @@ ${fragmentSh}
 
 export const ALL_EMPLOYEES_QUERY = gql`
 query Employees {
-    getEmployees {
+    Employees {
         id,
-        fullName
+        fullName,
+        isRegular,
+        visibleColor
     }
 }
-${fragmentE}
 `;
 //Описываем запрос на добавление в формате GraphQL
 

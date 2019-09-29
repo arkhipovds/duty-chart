@@ -12,7 +12,7 @@ Vue.use(vuetify);
 Vue.use(VueApollo);
 
 const Client = new ApolloClient({
-  uri: "http://localhost:4000/"
+  uri: 'http://localhost:4000/'
 });
 const apolloProvider = new VueApollo({
   defaultClient: Client
