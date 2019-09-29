@@ -1,29 +1,31 @@
 <template>
-    <v-app-bar>
-        <v-navigation-drawer absolute temporary v-model="drawer">
-            <v-list>
-                <v-list-tile v-for="(item,i) in menuItems" :key="`drawerItem${i}`">
-                    <v-list-tile-action>
-                        <!-- <v-icon left>item.icon</v-icon> -->
-                    </v-list-tile-action>
-                    <v-list-tile-content>
-                        <v-list-tile-title v-text="item.title"></v-list-tile-title>
-                    </v-list-tile-content>
-                 </v-list-tile>
-            </v-list>
+    <div>
+        <v-navigation-drawer absolute temporary height="auto" v-model="drawer" class="hidden-md-and-up">
+
+                <v-list-item v-for="(item,i) in menuItems" :key="`navdrawer${i}`">
+                    <v-list-item-action>
+                        <v-icon left>{{item.icon}}</v-icon>
+                    </v-list-item-action>
+                    <v-list-item-content>
+                        <v-list-item-title v-text="item.title"></v-list-item-title>                      
+                    </v-list-item-content>
+                 </v-list-item>
+
         </v-navigation-drawer>
-        <v-toolbar dark app class="primary">
-            <v-toolbar-side-icon @click.stop="drawer = !drawer"></v-toolbar-side-icon>
-            <v-toolbar-title v-text="'Дежурства отедла СПДиТ'"></v-toolbar-title>
+        <v-app-bar dark app class="primary">
+            <v-app-bar-nav-icon @click.stop="drawer = !drawer" class="hidden-md-and-up"></v-app-bar-nav-icon>
+                <router-link to="/" tag="span">
+                    <v-toolbar-title v-text="'Дежурства отедла СПДиТ'"></v-toolbar-title>
+                </router-link>
             <v-spacer></v-spacer>
-            <v-toolbar-items>
+            <v-toolbar-items class="hidden-sm-and-down">
                 <v-btn v-for="(item,i) in menuItems" text :key="`menuItem${i}`" :to="item.route">
                     <v-icon left>{{item.icon}}</v-icon> 
                     {{item.title}} 
                 </v-btn>
             </v-toolbar-items>
-        </v-toolbar>
-    </v-app-bar>
+        </v-app-bar>
+    </div>
 </template>
 
 <script>
