@@ -6,7 +6,6 @@
                     <v-card class="elevation-12">
                         <v-toolbar color="primary" dark flat>
                             <v-toolbar-title>Вход</v-toolbar-title>
-                          
                         </v-toolbar>
                         <v-card-text>
                             <v-form>

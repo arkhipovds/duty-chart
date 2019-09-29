@@ -42,18 +42,21 @@ query Employees {
 }
 `;
 //Описываем запрос на добавление в формате GraphQL
-
 export const ADD_EMPLOYEE_MUTATION = gql`
-    mutation($input: inputEmployee!) {
-        addEmployee(input: $input) {
-            id
-            fullName
+    mutation($fullName: String!, $isRegular: Boolean!, $visibleColor: String!) {
+        addEmployee(fullName: $fullName, isRegular: $isRegular, visibleColor: $visibleColor) {
+            id,
+            fullName,
+            isRegular,
+            visibleColor
         }
     }
-    ${fragmentE}
 `;
+
+
+
 export const DELETE_EMPLOYEE_MUTATION = gql`
-    mutation($id: ID!) {
+    mutation($id: String) {
         deleteEmployee(id: $id)
     }
 `;

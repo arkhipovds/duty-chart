@@ -1,46 +1,57 @@
 <template>
   <v-app>
-    
     <div class="text-xs-center">
-      <v-dialog v-model="dialog" max-width="500px" data-app>
-        <v-card>
-          <v-card-title>
-            <span class="headline">{{ formTitle }}</span>
-          </v-card-title>
-          <v-card-text>
-            <v-container grid-list-md>
-              <v-layout wrap>
-                <v-flex xs12 sm6 md4>
-                  <v-text-field
-                    ref="fullName"
-                    v-model="editedItem.fullName"
-                    label="ФИО"
-                  ></v-text-field>
-                </v-flex>
-              </v-layout>
-            </v-container>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn color="red darken-1" text @click="close">Отмена</v-btn>
-            <v-btn color="green darken-1" text @click="save">Сохранить</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+        <v-dialog v-model="dialog" max-width="500px" data-app>
+            <v-card>
+                <v-card-title>
+                    <span class="headline">{{ formTitle }}</span>
+                </v-card-title>
+                <v-card-text>
+                    <v-container grid-list-md>
+                        <v-layout wrap>
+                            <v-flex xs12 sm6 md4>
+                                <v-text-field ref="fullName" v-model="editedItem.fullName" label="ФИО"></v-text-field>
+                            </v-flex>
+                            <v-flex xs12 sm6 md4>
+                                <v-switch v-model="editedItem.isRegular" label="Штатный"></v-switch>
+                            </v-flex>
+                            <v-flex xs12 sm6 md4>
+                                <v-color-picker
+                                    v-model="editedItem.visibleColor"
+                                    :hide-canvas="true"
+                                    :hide-inputs="true"
+                                    :show-swatches="false"
+                                    class="mx-auto"
+                                >
+                                </v-color-picker>
+                            </v-flex>
+                        </v-layout>
+                    </v-container>
+                </v-card-text>
+            <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn color="red darken-1" text @click="close">Отмена</v-btn>
+                <v-btn color="green darken-1" text @click="save">Сохранить</v-btn>
+            </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 
     <v-card color="grey lighten-4" flat height="200px" tile>
       <v-toolbar>
-        <v-toolbar-title>Сотрудники</v-toolbar-title>
-        <v-spacer></v-spacer>
         <v-text-field
           v-model="searchTerm"
           prepend-icon="mdi-account-search"
           label="Поиск"
           single-line
+          sm="2" md="2" lg="2"
           hide-details
           clearable
-        ></v-text-field>
+          full-width
+          width="200px"
+        >
+        </v-text-field>
+        <v-spacer></v-spacer>
         <v-btn color="green" dark class="mb-2" @click="dialog = true">
           <v-icon dark>mdi-plus</v-icon>Сотрудник
         </v-btn>
@@ -65,30 +76,31 @@
         :items="Employees"
         :page.sync="pagination.page"
         :items-per-page="pagination.rowsPerPage"
-        :single-expand="true"
-        show-expand
         item-key="id"
         hide-default-footer
         class="elevation-1"
+        :calculate-widths="true"
         :search="searchTerm"
         :loading="loading"
         loading-text="Загрузка данных ... подождите!"
       >
         <!-- у таблицы есть несколько предопределенных слотов, скрытых элментов, которым можно
         описать шаблон и выводить при опреденных событиях-->
-        <template v-slot:item.action="{ item }">
-          <v-icon class="mr-2" @click="selectEmployee(item)">mdi-pencil</v-icon>
-          <v-icon @click="deleteEmployee(item)">mdi-delete</v-icon>
+        <template v-slot:item.visibleColor="{ item }">
+            <v-chip :color="item.visibleColor"><v-icon>mdi-account-box-outline</v-icon></v-chip>
         </template>
-        <!-- этот при раскрытии дополлнительной строки-->
-        <template v-slot:expanded-item="{ headers, item }">
-          <td :colspan="headers.length">{{ item.fullName }}</td>
+        <template v-slot:item.isRegular="{ item }">
+            <v-chip v-if="item.isRegular"><v-icon>mdi-check</v-icon></v-chip>
+        </template>
+        <template v-slot:item.action="{ item }">
+            <v-icon class="mr-2" @click="selectEmployee(item)">mdi-pencil</v-icon>
+            <v-icon @click="deleteEmployee(item)">mdi-delete</v-icon>
         </template>
         <!--если нет данных при поиске -->
         <template v-slot:no-results>
-          <v-alert :value="true" color="orange" icon="mdi-linux"
-            >По фразе "{{ searchTerm }}" ничего не найдено.</v-alert
-          >
+            <v-alert :value="true" color="orange" icon="mdi-linux"
+            >По фразе "{{ searchTerm }}" ничего не найдено.
+            </v-alert>
         </template>
         <!--Если бекенд не вернул ничего -->
         <template v-slot:no-data>
@@ -110,7 +122,7 @@
       :timeout="snackbar.timeout"
     >
       {{ snackbar.text }}
-      <v-btn fab flat :color="snackbar.color" @click="snackbar.show = false">
+      <v-btn fab text :color="snackbar.color" @click="snackbar.show = false">
         <v-icon dark>mdi-close</v-icon>
       </v-btn>
     </v-snackbar>
@@ -141,12 +153,16 @@ export default {
             // структура данных при редактировании
             editedItem: {
                 id: "",
-                fullName: ""
+                fullName: "",
+                isRegular: false,
+                visibleColor: ""
             },
             // структура данных для простоты очистки после правки этот объект вливаем в editedItem
             defaultItem: {
                 id: "",
-                fullName: ""
+                fullName: "",
+                isRegular: false,
+                visibleColor: ""
             },
             searchTerm: "", // переременная, где будет строка поиска
             //параметры пагинации
@@ -154,33 +170,38 @@ export default {
                 descending: false, // сортировка по убыванию выключена
                 sortBy: "id", // поле сортировки по умолчанию
                 page: 1, // текущая страница
-                rowsPerPage: 5 // по сколько выводить строк в таблицу
+                rowsPerPage: 15 // по сколько выводить строк в таблицу
             },
             headers: [
                 // у vuetify таблицы более богатые возможности
                 // описания заголовков столбцов
                 {
-                text: "ФИО",
-                align: "left",
-                sortable: true,
-                value: "fullName"
+                    text: "ФИО",
+                    align: 'start',
+                    sortable: true,
+                    value: "fullName"
                 },
                 {
-                text: "Цвет", // название в интерфейсе
-                align: "center", // выравнивание
-                sortable: false, // возможность сортировки
-                value: "visibleColor" // поле в базе
+                    text: "Цвет", // название в интерфейсе
+                    align: 'end',
+                    sortable: false, // возможность сортировки
+                    value: "visibleColor" // поле в базе
                 },
                 {
-                text: "Дежурный", // название в интерфейсе
-                align: "left", // выравнивание
-                sortable: true, // возможность сортировки
-                value: "isRegular" // поле в базе
+                    text: "Дежурный", // название в интерфейсе
+                    align: 'end',
+                    sortable: true, // возможность сортировки
+                    value: "isRegular" // поле в базе
                 },
                 // это фиктивный столбец, для инструментов правки и удаления
                 // обязательно нужно указать имя столбца, это имя используется в slot для вывода
                 // содержимого
-                { text: "", value: "action", sortable: false }
+                { 
+                    text: "", 
+                    align: 'end',
+                    value: "action", 
+                    sortable: false 
+                }
             ]
         };
   },
@@ -227,19 +248,15 @@ export default {
       }, 300);
     },
     addEmployee() {
-        // в методе addEmployeeByInput в качестве параметра идет объект
-        // если описать каждый параметр, то их можно было бы через запятую передать
-        // вида variables: {number,name}
-        const input = {
-            input: {
-                fullName: this.editedItem.name
-            }
-        };
         // после изменение данных читаем состояние в базе через запрос refetchQueries
         // Vue обновит данные в интерфейсе сам
         this.$apollo.mutate({
             mutation: ADD_EMPLOYEE_MUTATION,
-            variables: input,
+            variables: {
+                fullName: this.editedItem.fullName,
+                isRegular: this.editedItem.isRegular,
+                visibleColor: this.editedItem.visibleColor
+            },
             refetchQueries: [
                 {
                     query: ALL_EMPLOYEES_QUERY
@@ -249,7 +266,7 @@ export default {
     },
     deleteEmployee(input) {
       if (confirm("Удалить номер ?")) {
-        this.$apollo.mutate({
+        this.$apollo.mutate({ 
           mutation: DELETE_EMPLOYEE_MUTATION,
           variables: {
             id: input.id
@@ -269,6 +286,8 @@ export default {
     selectEmployee(input) {
       this.editedItem.id = input.id;
       this.editedItem.fullName = input.fullName;
+      this.editedItem.isRegular = input.isRegular;
+      this.editedItem.visibleColor = input.visibleColor;
       this.dialog = true;
     },
     //в реализации этого метода используются в качестве параметров поля раздельно

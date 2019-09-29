@@ -108,7 +108,7 @@ export default {
             details: 'Типовой текст',
             start: '2019-09-01 08:00',
             end: '2019-09-01 20:00',
-            color: '#cccccc',
+            color: '#FF00B2FF',
             },
             {
             name: 'Петров',
