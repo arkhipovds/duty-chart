@@ -8,7 +8,8 @@ import ApolloClient from "apollo-boost";
 
 Vue.config.productionTip = false
 
-Vue.use(vuetify, VueApollo);
+Vue.use(vuetify);
+Vue.use(VueApollo);
 
 const Client = new ApolloClient({
   uri: "http://localhost:4000/"

@@ -1,15 +1,310 @@
 <template>
-    <div>
-        <h1>Сотрудники</h1>
+  <v-app>
+    <!--
+    <div class="text-xs-center">
+      <v-dialog v-model="dialog" max-width="500px" data-app>
+        <v-card>
+          <v-card-title>
+            <span class="headline">{{ formTitle }}</span>
+          </v-card-title>
+
+          <v-card-text>
+            <v-container grid-list-md>
+              <v-layout wrap>
+                <v-flex xs12 sm6 md4>
+                  <v-text-field
+                    ref="fullName"
+                    v-model="editedItem.fullName"
+                    label="ФИО"
+                  ></v-text-field>
+                </v-flex>
+              </v-layout>
+            </v-container>
+          </v-card-text>
+
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="red darken-1" text @click="close">Отмена</v-btn>
+            <v-btn color="green darken-1" text @click="save">Сохранить</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </div>
+
+-->
+    <h1>{{Employees}}</h1>
+    <v-card color="grey lighten-4" flat height="200px" tile>
+      <v-toolbar>
+        <v-toolbar-title>Сотрудники</v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-text-field
+          v-model="searchTerm"
+          prepend-icon="search"
+          label="Поиск"
+          single-line
+          hide-details
+          clearable
+        ></v-text-field>
+        <v-btn color="green" dark class="mb-2" @click="dialog = true">
+          <v-icon dark>mdi-plus</v-icon>Сотрудник
+        </v-btn>
+      </v-toolbar>
+
+
+      <!-- таблица с данными
+        :headers="headers" // источник заголовков столбцов
+        :items="Employees" // источник данных
+        :page.sync="pagination.page" // текущая страница
+        :items-per-page="pagination.rowsPerPage" // сколько записей на страницу
+        :single-expand="true" // разворачивать только одну строку
+        show-expand // показывать или нет разворот строки
+        item-key="id" // ключевое поле
+        hide-default-footer // убрать встроенную пагинацию
+        class="elevation-1" // чтобы тень была
+        :loading="false" // включить бегунук на таблице, типа загрузка
+        loading-text="Загрузка данных ... подождите!" // собственно текст выводимый при загрузке
+      -->
+      <v-data-table
+        :headers="headers"
+        :items="Employees"
+        :page.sync="pagination.page"
+        :items-per-page="pagination.rowsPerPage"
+        :single-expand="true"
+        show-expand
+        item-key="id"
+        hide-default-footer
+        class="elevation-1"
+        :search="searchTerm"
+        :loading="loading"
+        loading-text="Загрузка данных ... подождите!"
+      >
+        <!-- у таблицы есть несколько предопределенных слотов, скрытых элментов, которым можно
+        описать шаблон и выводить при опреденных событиях-->
+        <template v-slot:item.action="{ item }">
+          <v-icon class="mr-2" @click="selectEmployee(item)">edit</v-icon>
+          <v-icon @click="deleteEmployee(item)">delete_forever</v-icon>
+        </template>
+        <!-- этот при раскрытии дополлнительной строки-->
+        <template v-slot:expanded-item="{ headers, item }">
+          <td :colspan="headers.length">{{ item.fullName }}</td>
+        </template>
+        <!--если нет данных при поиске -->
+        <template v-slot:no-results>
+          <v-alert :value="true" color="orange" icon="warning"
+            >По фразе "{{ searchTerm }}" ничего не найдено.</v-alert
+          >
+        </template>
+        <!--Если бекенд не вернул ничего -->
+        <template v-slot:no-data>
+            <v-alert :value="true" color="error" icon="warning">
+                Нет данных.
+            </v-alert>
+        </template>
+      </v-data-table>
+      <!--элемент пагинации. Собственно ему надо передовать текущую страницу и всего страниц -->
+      <div class="text-xs-center pt-3">
+        <v-pagination v-model="pagination.page" :length="pages"></v-pagination>
+      </div>
+    </v-card>
+    <!--снекбар, уведоплялочка всплывашка, внутри снекбара можно описать любой шаблон -->
+    <v-snackbar
+      v-model="snackbar.show"
+      top
+      :color="snackbar.color"
+      :timeout="snackbar.timeout"
+    >
+      {{ snackbar.text }}
+      <v-btn fab flat :color="snackbar.color" @click="snackbar.show = false">
+        <v-icon dark>close</v-icon>
+      </v-btn>
+    </v-snackbar>
+  </v-app>
 </template>
 
 <script>
-    export default {
-        
+// вынес все запросы в отдельный файл
+import {
+    ALL_EMPLOYEES_QUERY,
+    ADD_EMPLOYEE_MUTATION,
+    DELETE_EMPLOYEE_MUTATION
+} from "@/queries/queries.js";
+
+export default {
+    name: "App",
+    data() {
+        return {
+            loading: true,
+            dialog: false,
+            // структура для уведомлений
+            snackbar: {
+                show: false,
+                color: "green",
+                text: "Сообщение",
+                timeout: 5000 //само пропадет через 5 сек
+            },
+            // структура данных при редактировании
+            editedItem: {
+                id: "",
+                fullName: ""
+            },
+            // структура данных для простоты очистки после правки этот объект вливаем в editedItem
+            defaultItem: {
+                id: "",
+                fullName: ""
+            },
+            searchTerm: "", // переременная, где будет строка поиска
+            //параметры пагинации
+            pagination: {
+                descending: false, // сортировка по убыванию выключена
+                sortBy: "id", // поле сортировки по умолчанию
+                page: 1, // текущая страница
+                rowsPerPage: 5 // по сколько выводить строк в таблицу
+            },
+            headers: [
+                // у vuetify таблицы более богатые возможности
+                // описания заголовков столбцов
+                {
+                text: "Id", // название в интерфейсе
+                align: "left", // выравнивание
+                sortable: true, // возможность сортировки
+                value: "id" // поле в базе
+                },
+                {
+                text: "ФИО",
+                align: "left",
+                sortable: true,
+                value: "fullName"
+                },
+                // это фиктивный столбец, для инструментов правки и удаления
+                // обязательно нужно указать имя столбца, это имя используется в slot для вывода
+                // содержимого
+                { text: "", value: "action", sortable: false }
+            ]
+        };
+  },
+  apollo: {
+    Employees: {
+      query: ALL_EMPLOYEES_QUERY
     }
+  },
+  computed: {
+    formTitle() {
+      return this.editedItem.id === ""
+        ? "Добавить сотрудника"
+        : "Исправить :) сотрудника";
+    },
+    pages() {
+      // если количество записей на странице нулевое, то на ноль делить нельзя
+      // выводим сразу количество страниц 0 и пагинатора не будет
+      if (
+        this.Employees &&
+        (this.pagination.rowsPerPage != null ||
+          this.pagination.rowsPerPage != 0)
+      ) {
+        // если данные с бэкенда есть, то считаем
+        return Math.ceil(this.Employees.length / this.pagination.rowsPerPage);
+      } else return 0; //
+    }
+  },
+  watch: {
+    pages() {
+      // отслеживаем изменение расчета страниц, если оно было, то данные есть с бэкенда
+      // и загрузчик выключаем
+      if (this.Employees) this.loading = false;
+    },
+    dialog(val) {
+      val || this.close();
+    }
+  },
+  methods: {
+    close() {
+      this.dialog = false;
+      setTimeout(() => {
+        this.editedItem = Object.assign({}, this.defaultItem);
+        this.editedIndex = -1;
+      }, 300);
+    },
+    addEmployee() {
+        // в методе addEmployeeByInput в качестве параметра идет объект
+        // если описать каждый параметр, то их можно было бы через запятую передать
+        // вида variables: {number,name}
+        const input = {
+            input: {
+                fullName: this.editedItem.name
+            }
+        };
+        // после изменение данных читаем состояние в базе через запрос refetchQueries
+        // Vue обновит данные в интерфейсе сам
+        this.$apollo.mutate({
+            mutation: ADD_EMPLOYEE_MUTATION,
+            variables: input,
+            refetchQueries: [
+                {
+                    query: ALL_EMPLOYEES_QUERY
+                }
+            ]
+        });
+    },
+    deleteEmployee(input) {
+      if (confirm("Удалить номер ?")) {
+        this.$apollo.mutate({
+          mutation: DELETE_EMPLOYEE_MUTATION,
+          variables: {
+            id: input.id
+          },
+          refetchQueries: [
+            {
+              query: ALL_EMPLOYEES_QUERY
+            }
+          ]
+        });
+        this.snackbar.text = `УДАЛЕНО! ${this.editedItem.fullName}`;
+        this.snackbar.color = "red";
+        this.snackbar.show = true;
+      }
+    },
+    // эта функция заполняет поля ввода в форме редактирования
+    selectEmployee(input) {
+      this.editedItem.id = input.id;
+      this.editedItem.fullName = input.fullName;
+      this.dialog = true;
+    },
+    //в реализации этого метода используются в качестве параметров поля раздельно
+    // это не обязательно, просто в качестве примера. При добавлении объект, а тут поля
+    updateEmployee() {
+        /*
+      this.$apollo.mutate({
+        mutation: UPDATE_EMPLOYEE_MUTATION,
+        variables: {
+          id: this.editedItem.id,
+          number: this.editedItem.number,
+          name: this.editedItem.name
+        },
+        refetchQueries: [
+          {
+            query: ALL_EMPLOYEES_QUERY
+          }
+        ]
+      });
+      */
+    },
+    save() {
+      var mode = "ИСПРАВЛЕНО! ";
+      if (this.editedItem.id != "") {
+        this.updateEmployee();
+      } else {
+        this.addEmployee();
+        // this.Employees.push(this.editedItem);
+        this.pagination.sortBy = "id";
+        this.pagination.descending = false;
+        this.pagination.page = this.pages;
+        mode = "ДОБАВЛЕНО!";
+      }
+      this.snackbar.text = `${mode} ${this.editedItem.fullName}`;
+      this.snackbar.color = "green";
+      this.snackbar.show = true;
+      this.close();
+    }
+  }
+};
 </script>
-
-<style lang="scss" scoped>
-
-</style>

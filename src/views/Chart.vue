@@ -85,77 +85,86 @@
 </template>
 
 <script>
-  export default {
+import {
+  ALL_SHIFTS_QUERY
+} from "@/queries/queries.js";
+
+export default {
     data: () => ({
-      focus: null,
-      type: 'month',
-      typeToLabel: {
-        month: 'Месяц',
-        week: 'Неделя',
-      },
-      start: null,
-      end: null,
-      selectedEvent: {},
-      selectedElement: null,
-      selectedOpen: false,
-      events: [
-        {
-          name: 'Иванов',
-          details: 'Типовой текст',
-          start: '2019-09-01 08:00',
-          end: '2019-09-01 20:00',
-          color: '#cccccc',
+        focus: null,
+        type: 'month',
+        typeToLabel: {
+            month: 'Месяц',
+            week: 'Неделя',
         },
-        {
-          name: 'Петров',
-          details: 'Типовой текст',
-          start: '2019-09-01 20:00',
-          end: '2019-09-02 08:00',
-          color: 'deep-purple',
+        start: null,
+        end: null,
+        selectedEvent: {},
+        selectedElement: null,
+        selectedOpen: false,
+        events: [
+            {
+            name: 'Иванов',
+            details: 'Типовой текст',
+            start: '2019-09-01 08:00',
+            end: '2019-09-01 20:00',
+            color: '#cccccc',
+            },
+            {
+            name: 'Петров',
+            details: 'Типовой текст',
+            start: '2019-09-01 20:00',
+            end: '2019-09-02 08:00',
+            color: 'deep-purple',
+            },
+            {
+            name: 'Иванов',
+            details: 'Типовой текст',
+            start: '2019-09-02 08:00',
+            end: '2019-09-02 20:00',
+            color: 'indigo',
+            },
+            {
+            name: 'Петров',
+            details: 'Типовой текст',
+            start: '2019-09-02 20:00',
+            end: '2019-09-03 08:00',
+            color: 'deep-purple',
+            },
+            {
+            name: 'Сидоров',
+            details: 'Типовой текст',
+            start: '2019-09-03 08:00',
+            end: '2019-09-03 20:00',
+            color: 'red',
+            },
+            {
+            name: 'Огурцов',
+            details: 'Типовой текст',
+            start: '2019-09-03 20:00',
+            end: '2019-09-04 08:00',
+            color: 'green',
+            },
+            {
+            name: 'Сидоров',
+            details: 'Типовой текст',
+            start: '2019-09-04 08:00',
+            end: '2019-09-04 20:00',
+            color: 'red',
+            },
+            {
+            name: 'Огурцов',
+            details: 'Типовой текст',
+            start: '2019-09-04 20:00',
+            end: '2019-09-05 08:00',
+            color: 'green',
+            },
+        ],
+        apollo: {
+            Shifts: {
+                query: ALL_SHIFTS_QUERY
+            }
         },
-        {
-          name: 'Иванов',
-          details: 'Типовой текст',
-          start: '2019-09-02 08:00',
-          end: '2019-09-02 20:00',
-          color: 'indigo',
-        },
-        {
-          name: 'Петров',
-          details: 'Типовой текст',
-          start: '2019-09-02 20:00',
-          end: '2019-09-03 08:00',
-          color: 'deep-purple',
-        },
-        {
-          name: 'Сидоров',
-          details: 'Типовой текст',
-          start: '2019-09-03 08:00',
-          end: '2019-09-03 20:00',
-          color: 'red',
-        },
-        {
-          name: 'Огурцов',
-          details: 'Типовой текст',
-          start: '2019-09-03 20:00',
-          end: '2019-09-04 08:00',
-          color: 'green',
-        },
-        {
-          name: 'Сидоров',
-          details: 'Типовой текст',
-          start: '2019-09-04 08:00',
-          end: '2019-09-04 20:00',
-          color: 'red',
-        },
-        {
-          name: 'Огурцов',
-          details: 'Типовой текст',
-          start: '2019-09-04 20:00',
-          end: '2019-09-05 08:00',
-          color: 'green',
-        },
-      ],
     }),
     computed: {
       title () {
