@@ -30,6 +30,10 @@
           </v-menu>
         </v-toolbar>
       </v-sheet>
+      <!--
+      <h1> {{shift}}
+           </h1>
+      -->
       <v-sheet>
         <v-calendar
           ref="calendar"
@@ -37,7 +41,7 @@
           color="primary"
           locale="ru"
           interval-height="25"
-          :events="Shift"
+          :events="shift"
           :event-color="getEventColor"
           :event-margin-bottom="3"
           :type="type"
@@ -45,6 +49,8 @@
           @click:more="viewDay"
           @change="updateRange"
         ></v-calendar>
+        <v-btn color="success">Добавть смену</v-btn>
+
         <v-menu
           v-model="selectedOpen"
           :close-on-content-click="false"
@@ -52,29 +58,47 @@
           full-width
           offset-x
         >
-          <v-card color="grey lighten-4" min-width="350px" flat>
-            <v-toolbar :color="selectedEvent.color" dark>
-              <v-btn icon>
-                <v-icon>mdi-pencil</v-icon>
-              </v-btn>
-              <v-toolbar-title v-html="selectedEvent.name"></v-toolbar-title>
-              <div class="flex-grow-1"></div>
-              <v-btn icon>
-                <v-icon>mdi-heart</v-icon>
-              </v-btn>
-              <v-btn icon>
-                <v-icon>mdi-dots-vertical</v-icon>
-              </v-btn>
-            </v-toolbar>
+          <v-card>
+            <v-card-title>
+              <span class="headline">{{ formTitle }}</span>
+            </v-card-title>
             <v-card-text>
-              <span v-html="selectedEvent.details"></span>
+              <v-container grid-list-md>
+                <v-layout wrap>
+                  <v-flex xs12 sm6 md4>
+                    <v-text-field ref="fullName" v-model="selectedEvent.name" label="ФИО"></v-text-field>
+                    <!--
+                    <v-autocomplete
+                      ref="fullName"
+                      v-model="selectedEvent.name"
+                      :rules="[() => !!country || 'This field is required']"
+                      :items="Employees.fullName"
+                      label="ФИО"
+                      placeholder="Select..."
+                      required
+                    ></v-autocomplete>
+                    -->
+                  </v-flex>
+                </v-layout>
+              </v-container>
             </v-card-text>
             <v-card-actions>
-              <v-btn text color="secondary" @click="selectedOpen = false">Cancel</v-btn>
+              <v-spacer></v-spacer>
+              <v-btn color="red darken-1" text @click="close">Отмена</v-btn>
+              <v-btn color="green darken-1" text @click="save">Сохранить</v-btn>
+              <!--
+              <v-btn text color="secondary" @click="selectedOpen = false">Отмена</v-btn>
+              -->
             </v-card-actions>
           </v-card>
         </v-menu>
       </v-sheet>
+      <v-snackbar v-model="snackbar.show" top :color="snackbar.color" :timeout="snackbar.timeout">
+        {{ snackbar.text }}
+        <v-btn fab text :color="snackbar.color" @click="snackbar.show = false">
+          <v-icon dark>mdi-close</v-icon>
+        </v-btn>
+      </v-snackbar>
     </v-col>
   </v-row>
 </template>
@@ -84,6 +108,12 @@ import { ALL_SHIFTS_QUERY, ALL_EMPLOYEES_QUERY } from "@/queries/queries.js";
 
 export default {
   data: () => ({
+    snackbar: {
+      show: false,
+      color: "green",
+      text: "Сообщение",
+      timeout: 5000 //само пропадет через 5 сек
+    },
     focus: null,
     type: "month",
     typeToLabel: {
@@ -92,27 +122,44 @@ export default {
     },
     start: null,
     end: null,
-    selectedEvent: {},
+    defaultEvent: {
+      id: "",
+      start: "",
+      end: "",
+      name: "",
+      color: "",
+      employeeId: ""
+    },
+    selectedEvent: {
+      id: "",
+      start: "",
+      end: "",
+      name: "",
+      color: "",
+      employeeId: ""
+    },
     selectedElement: null,
     selectedOpen: false,
+    //  events: [],
+
     events: [
       {
         name: "Иванов",
-        details: "Типовой текст",
+
         start: "2019-09-01 08:00",
         end: "2019-09-01 20:00",
         color: "#FF00B2FF"
       },
       {
         name: "Петров",
-        details: "Типовой текст",
+
         start: "2019-09-01 20:00",
         end: "2019-09-02 08:00",
         color: "deep-purple"
       },
       {
         name: "Иванов",
-        details: "Типовой текст",
+
         start: "2019-09-02 08:00",
         end: "2019-09-02 20:00",
         color: "indigo"
@@ -152,15 +199,10 @@ export default {
         end: "2019-09-05 08:00",
         color: "green"
       }
-    ],
-    apollo: {
-      Shifts: {
-        query: ALL_SHIFTS_QUERY
-      }
-    }
+    ]
   }),
   apollo: {
-    Shift: {
+    Shifts: {
       query: ALL_SHIFTS_QUERY
     },
     Employees: {
@@ -168,6 +210,29 @@ export default {
     }
   },
   computed: {
+    formTitle() {
+      return this.selectedEvent.id === ""
+        ? "Добавить смену"
+        : "Исправить смену";
+    },
+    shift() {
+      //!!!!!!!!!!!!!!!TODO переписать стрелочную функцию на нормальную, с проверками существования всех объектов и дефолтным поведением
+      var newShifts = [];
+      if (this.Shifts && this.Employees)
+        newShifts = this.Shifts.map(n => ({
+          id: n.id,
+          start: n.start,
+          end: n.end,
+          name: this.Employees[
+            this.Employees.findIndex(el => el.id === n.employeeId)
+          ].fullName,
+          color: this.Employees[
+            this.Employees.findIndex(el => el.id === n.employeeId)
+          ].visibleColor,
+          employeeId: n.employeeId
+        }));
+      return newShifts;
+    },
     title() {
       const { start, end } = this;
       if (!start || !end) {
@@ -207,6 +272,26 @@ export default {
     this.$refs.calendar.checkChange();
   },
   methods: {
+    close() {
+      this.selectedOpen = false;
+      setTimeout(() => {
+        this.selectedEvent = Object.assign({}, this.defaultEvent);
+        this.editedIndex = -1;
+      }, 300);
+    },
+    save() {
+      var mode = "ИСПРАВЛЕНО!";
+      if (this.selectedEvent.id != "") {
+        //  this.updateEmployee();  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!здесь обновим событие (смену)
+      } else {
+        //   this.addEmployee(); !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!здесь добавим событие (смену)
+        mode = "ДОБАВЛЕНО!";
+      }
+      this.snackbar.text = `${mode} ${this.selectedEvent.name}`;
+      this.snackbar.color = "green";
+      this.snackbar.show = true;
+      this.close();
+    },
     viewDay({ date }) {
       this.focus = date;
       this.type = "day";
