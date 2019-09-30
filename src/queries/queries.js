@@ -28,7 +28,6 @@ query Shifts {
         employeeId
     }
 }
-${fragmentSh}
 `;
 
 export const ALL_EMPLOYEES_QUERY = gql`
@@ -52,7 +51,17 @@ export const ADD_EMPLOYEE_MUTATION = gql`
         }
     }
 `;
-
+//Описываем запрос на добавление в формате GraphQL
+export const UPDATE_EMPLOYEE_MUTATION = gql`
+    mutation($id: String!, $fullName: String!, $isRegular: Boolean!, $visibleColor: String!) {
+        updateEmployee(id: $id, fullName: $fullName, isRegular: $isRegular, visibleColor: $visibleColor) {
+            id,
+            fullName,
+            isRegular,
+            visibleColor
+        }
+    }
+`;
 
 
 export const DELETE_EMPLOYEE_MUTATION = gql`

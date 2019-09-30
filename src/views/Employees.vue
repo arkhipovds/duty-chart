@@ -36,7 +36,6 @@
             </v-card>
         </v-dialog>
     </div>
-
     <v-card color="grey lighten-4" flat height="200px" tile>
       <v-toolbar>
         <v-text-field
@@ -71,12 +70,14 @@
         :loading="false" // включить бегунук на таблице, типа загрузка
         loading-text="Загрузка данных ... подождите!" // собственно текст выводимый при загрузке
       -->
+      
       <v-data-table
         :headers="headers"
         :items="Employees"
         :page.sync="pagination.page"
         :items-per-page="pagination.rowsPerPage"
         item-key="id"
+        max-width="600px"
         hide-default-footer
         class="elevation-1"
         :calculate-widths="true"
@@ -84,10 +85,11 @@
         :loading="loading"
         loading-text="Загрузка данных ... подождите!"
       >
+      
         <!-- у таблицы есть несколько предопределенных слотов, скрытых элментов, которым можно
         описать шаблон и выводить при опреденных событиях-->
         <template v-slot:item.visibleColor="{ item }">
-            <v-chip :color="item.visibleColor"><v-icon>mdi-account-box-outline</v-icon></v-chip>
+            <v-chip :color="item.visibleColor"></v-chip>
         </template>
         <template v-slot:item.isRegular="{ item }">
             <v-chip v-if="item.isRegular"><v-icon>mdi-check</v-icon></v-chip>
@@ -134,76 +136,77 @@
 import {
     ALL_EMPLOYEES_QUERY,
     ADD_EMPLOYEE_MUTATION,
+    UPDATE_EMPLOYEE_MUTATION,
     DELETE_EMPLOYEE_MUTATION
 } from "@/queries/queries.js";
 
 export default {
-    name: "App",
-    data() {
-        return {
-            loading: true,
-            dialog: false,
-            // структура для уведомлений
-            snackbar: {
-                show: false,
-                color: "green",
-                text: "Сообщение",
-                timeout: 5000 //само пропадет через 5 сек
+  name: "App",
+  data() {
+    return {
+        loading: true,
+        dialog: false,
+        // структура для уведомлений
+        snackbar: {
+            show: false,
+            color: "green",
+            text: "Сообщение",
+            timeout: 5000 //само пропадет через 5 сек
+        },
+        // структура данных при редактировании
+        editedItem: {
+            id: "",
+            fullName: "",
+            isRegular: false,
+            visibleColor: ""
+        },
+        // структура данных для простоты очистки после правки этот объект вливаем в editedItem
+        defaultItem: {
+            id: "",
+            fullName: "",
+            isRegular: false,
+            visibleColor: ""
+        },
+        searchTerm: "", // переременная, где будет строка поиска
+        //параметры пагинации
+        pagination: {
+            descending: false, // сортировка по убыванию выключена
+            sortBy: "id", // поле сортировки по умолчанию
+            page: 1, // текущая страница
+            rowsPerPage: 15 // по сколько выводить строк в таблицу
+        },
+        headers: [
+            // у vuetify таблицы более богатые возможности
+            // описания заголовков столбцов
+            {
+                text: "ФИО",
+                align: 'start',
+                sortable: true,
+                value: "fullName"
             },
-            // структура данных при редактировании
-            editedItem: {
-                id: "",
-                fullName: "",
-                isRegular: false,
-                visibleColor: ""
+            {
+                text: "Цвет", // название в интерфейсе
+                align: 'end',
+                sortable: false, // возможность сортировки
+                value: "visibleColor" // поле в базе
             },
-            // структура данных для простоты очистки после правки этот объект вливаем в editedItem
-            defaultItem: {
-                id: "",
-                fullName: "",
-                isRegular: false,
-                visibleColor: ""
+            {
+                text: "Дежурный", // название в интерфейсе
+                align: 'end',
+                sortable: true, // возможность сортировки
+                value: "isRegular" // поле в базе
             },
-            searchTerm: "", // переременная, где будет строка поиска
-            //параметры пагинации
-            pagination: {
-                descending: false, // сортировка по убыванию выключена
-                sortBy: "id", // поле сортировки по умолчанию
-                page: 1, // текущая страница
-                rowsPerPage: 15 // по сколько выводить строк в таблицу
-            },
-            headers: [
-                // у vuetify таблицы более богатые возможности
-                // описания заголовков столбцов
-                {
-                    text: "ФИО",
-                    align: 'start',
-                    sortable: true,
-                    value: "fullName"
-                },
-                {
-                    text: "Цвет", // название в интерфейсе
-                    align: 'end',
-                    sortable: false, // возможность сортировки
-                    value: "visibleColor" // поле в базе
-                },
-                {
-                    text: "Дежурный", // название в интерфейсе
-                    align: 'end',
-                    sortable: true, // возможность сортировки
-                    value: "isRegular" // поле в базе
-                },
-                // это фиктивный столбец, для инструментов правки и удаления
-                // обязательно нужно указать имя столбца, это имя используется в slot для вывода
-                // содержимого
-                { 
-                    text: "", 
-                    align: 'end',
-                    value: "action", 
-                    sortable: false 
-                }
-            ]
-        };
+            // это фиктивный столбец, для инструментов правки и удаления
+            // обязательно нужно указать имя столбца, это имя используется в slot для вывода
+            // содержимого
+            { 
+                text: "", 
+                align: 'end',
+                value: "action", 
+                sortable: false 
+            }
+        ]
+    };
   },
   apollo: {
     Employees: {
@@ -293,13 +296,14 @@ export default {
     //в реализации этого метода используются в качестве параметров поля раздельно
     // это не обязательно, просто в качестве примера. При добавлении объект, а тут поля
     updateEmployee() {
-        /*
+      
       this.$apollo.mutate({
         mutation: UPDATE_EMPLOYEE_MUTATION,
         variables: {
           id: this.editedItem.id,
-          number: this.editedItem.number,
-          name: this.editedItem.name
+          fullName: this.editedItem.fullName,
+          isRegular: this.editedItem.isRegular,
+          visibleColor: this.editedItem.visibleColor
         },
         refetchQueries: [
           {
@@ -307,15 +311,14 @@ export default {
           }
         ]
       });
-      */
+      
     },
     save() {
-      var mode = "ИСПРАВЛЕНО! ";
+      var mode = "ИСПРАВЛЕНО!";
       if (this.editedItem.id != "") {
         this.updateEmployee();
       } else {
         this.addEmployee();
-        // this.Employees.push(this.editedItem);
         this.pagination.sortBy = "id";
         this.pagination.descending = false;
         this.pagination.page = this.pages;
