@@ -45,19 +45,15 @@
           :event-color="getEventColor"
           :event-margin-bottom="3"
           :type="type"
-          @click:event="showEvent"
+          @click:event="dialog=true"
           @click:more="viewDay"
           @change="updateRange"
         ></v-calendar>
-        <v-btn color="success">Добавть смену</v-btn>
+        <v-btn color="success" @click="showEvent = true">
+          <v-icon dark>mdi-plus</v-icon>Смена
+        </v-btn>
 
-        <v-menu
-          v-model="selectedOpen"
-          :close-on-content-click="false"
-          :activator="selectedElement"
-          full-width
-          offset-x
-        >
+        <v-dialog v-model="dialog" :activator="selectedElement" max-width="500px">
           <v-card>
             <v-card-title>
               <span class="headline">{{ formTitle }}</span>
@@ -78,6 +74,7 @@
                       required
                     ></v-autocomplete>
                     -->
+                    
                   </v-flex>
                 </v-layout>
               </v-container>
@@ -91,7 +88,7 @@
               -->
             </v-card-actions>
           </v-card>
-        </v-menu>
+        </v-dialog>
       </v-sheet>
       <v-snackbar v-model="snackbar.show" top :color="snackbar.color" :timeout="snackbar.timeout">
         {{ snackbar.text }}
@@ -108,6 +105,7 @@ import { ALL_SHIFTS_QUERY, ALL_EMPLOYEES_QUERY } from "@/queries/queries.js";
 
 export default {
   data: () => ({
+    dialog: false,
     snackbar: {
       show: false,
       color: "green",

@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <div class="text-xs-center">
-      <v-dialog v-model="dialog" max-width="500px" data-app>
+      <v-dialog v-model="dialog" max-width="500px">
         <v-card>
           <v-card-title>
             <span class="headline">{{ formTitle }}</span>
@@ -51,7 +51,7 @@
           width="200px"
         ></v-text-field>
         <v-spacer></v-spacer>
-        <v-btn color="green" dark class="mb-2" @click="dialog = true">
+        <v-btn color="green" dark class="mb-2" @click="dialog=true">
           <v-icon dark>mdi-plus</v-icon>Сотрудник
         </v-btn>
       </v-toolbar>
