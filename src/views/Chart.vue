@@ -30,10 +30,9 @@
           </v-menu>
         </v-toolbar>
       </v-sheet>
-      <!--
-      <h1> {{shift}}
-           </h1>
-      -->
+
+      <h3>{{selectedEvent}} - {{selectedElement}}</h3>
+
       <v-sheet>
         <v-calendar
           ref="calendar"
@@ -45,11 +44,11 @@
           :event-color="getEventColor"
           :event-margin-bottom="3"
           :type="type"
-          @click:event="dialog=true"
+          @click:event="openShift"
           @click:more="viewDay"
           @change="updateRange"
         ></v-calendar>
-        <v-btn color="success" @click="showEvent = true">
+        <v-btn color="success" @click="openShift = true">
           <v-icon dark>mdi-plus</v-icon>Смена
         </v-btn>
 
@@ -62,7 +61,25 @@
               <v-container grid-list-md>
                 <v-layout wrap>
                   <v-flex xs12 sm6 md4>
-                    <v-text-field ref="fullName" v-model="selectedEvent.name" label="ФИО"></v-text-field>
+                    <v-text-field
+                      ref="fullName"
+                      v-model="selectedEvent.name"
+                      label="ФИО"
+                      :color="selectedEvent.color"
+                    ></v-text-field>
+                    <!--
+                    <v-select
+                      v-model="select"
+                      :hint="`${select.state}, ${select.abbr}`"
+                      :items="items"
+                      item-text="state"
+                      item-value="abbr"
+                      label="Select"
+                      persistent-hint
+                      return-object
+                      single-line
+                    ></v-select>
+                    -->
                     <!--
                     <v-autocomplete
                       ref="fullName"
@@ -74,7 +91,24 @@
                       required
                     ></v-autocomplete>
                     -->
-                    
+                    <v-text-field
+                      ref="startDate"
+                      v-model="selectedEvent.startDate"
+                      label="Дата"
+                      type="date"
+                    ></v-text-field>
+                    <v-text-field
+                      ref="startTime"
+                      v-model="selectedEvent.startTime"
+                      label="Время"
+                      type="time"
+                    ></v-text-field>
+                    <v-text-field
+                      ref="duration"
+                      v-model="selectedEvent.duration"
+                      label="Длительность"
+                      type="time"
+                    ></v-text-field>
                   </v-flex>
                 </v-layout>
               </v-container>
@@ -83,9 +117,6 @@
               <v-spacer></v-spacer>
               <v-btn color="red darken-1" text @click="close">Отмена</v-btn>
               <v-btn color="green darken-1" text @click="save">Сохранить</v-btn>
-              <!--
-              <v-btn text color="secondary" @click="selectedOpen = false">Отмена</v-btn>
-              -->
             </v-card-actions>
           </v-card>
         </v-dialog>
@@ -122,6 +153,9 @@ export default {
     end: null,
     defaultEvent: {
       id: "",
+      startDate: "",
+      startTime: "",
+      duration: "",
       start: "",
       end: "",
       name: "",
@@ -130,6 +164,9 @@ export default {
     },
     selectedEvent: {
       id: "",
+      startDate: "",
+      startTime: "",
+      duration: "",
       start: "",
       end: "",
       name: "",
@@ -137,7 +174,6 @@ export default {
       employeeId: ""
     },
     selectedElement: null,
-    selectedOpen: false,
     //  events: [],
 
     events: [
@@ -271,7 +307,6 @@ export default {
   },
   methods: {
     close() {
-      this.selectedOpen = false;
       setTimeout(() => {
         this.selectedEvent = Object.assign({}, this.defaultEvent);
         this.editedIndex = -1;
@@ -306,20 +341,19 @@ export default {
     next() {
       this.$refs.calendar.next();
     },
-    showEvent({ nativeEvent, event }) {
-      const open = () => {
-        this.selectedEvent = event;
-        this.selectedElement = nativeEvent.target;
-        setTimeout(() => (this.selectedOpen = true), 10);
-      };
+    openShift({ nativeEvent, event }) {
+      this.dialog = true;
+      this.selectedEvent = event;
+      this.selectedEvent.startDate = this.selectedEvent.start.slice(0, 10);
+      this.selectedEvent.startTime = this.selectedEvent.start.slice(11, 16);
+      const theDiff =
+        new Date(this.selectedEvent.end).getTime() -
+        new Date(this.selectedEvent.start).getTime();
+      this.selectedEvent.duration = new Date(theDiff)
+        .toISOString()
+        .slice(11, 16);
 
-      if (this.selectedOpen) {
-        this.selectedOpen = false;
-        setTimeout(open, 10);
-      } else {
-        open();
-      }
-
+      this.selectedElement = nativeEvent.target;
       nativeEvent.stopPropagation();
     },
     updateRange({ start, end }) {
