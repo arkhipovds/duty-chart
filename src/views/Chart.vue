@@ -2,6 +2,7 @@
   <v-row class="fill-height">
     <v-col>
       <v-sheet height="64">
+        <!-- Панель навигации по календарю -->
         <v-toolbar flat color="white">
           <v-btn outlined class="mr-4" @click="setToday">Сегодня</v-btn>
           <v-btn fab text small @click="prev">
@@ -31,9 +32,11 @@
         </v-toolbar>
       </v-sheet>
 
-      <h3>{{selectedEvent}} - {{selectedElement}}</h3>
+      <h3>{{selectedEvent}} - {{defaultEvent}}</h3>
+      <!-- Место для отладки  TODO удалить -->
 
       <v-sheet>
+        <!-- Календарь -->
         <v-calendar
           ref="calendar"
           v-model="focus"
@@ -48,11 +51,13 @@
           @click:more="viewDay"
           @change="updateRange"
         ></v-calendar>
-        <v-btn color="success" @click="openShift = true">
+        <v-btn color="success" @click="openShift">
+          <!-- Кнопка "добавить смену" -->
           <v-icon dark>mdi-plus</v-icon>Смена
         </v-btn>
 
         <v-dialog v-model="dialog" :activator="selectedElement" max-width="500px">
+          <!-- Диалог создания/правки смены -->
           <v-card>
             <v-card-title>
               <span class="headline">{{ formTitle }}</span>
@@ -61,25 +66,25 @@
               <v-container grid-list-md>
                 <v-layout wrap>
                   <v-flex xs12 sm6 md4>
+                    <!--
                     <v-text-field
                       ref="fullName"
                       v-model="selectedEvent.name"
                       label="ФИО"
                       :color="selectedEvent.color"
                     ></v-text-field>
-                    <!--
+                    -->
                     <v-select
-                      v-model="select"
-                      :hint="`${select.state}, ${select.abbr}`"
-                      :items="items"
-                      item-text="state"
-                      item-value="abbr"
-                      label="Select"
+                      v-model="selectedEvent.employee"
+                      :items="Employees"
+                      item-text="fullName"
+                      item-value="id"
+                      label="123"
                       persistent-hint
                       return-object
                       single-line
                     ></v-select>
-                    -->
+
                     <!--
                     <v-autocomplete
                       ref="fullName"
@@ -136,12 +141,15 @@ import { ALL_SHIFTS_QUERY, ALL_EMPLOYEES_QUERY } from "@/queries/queries.js";
 
 export default {
   data: () => ({
+    //Открыт ли диалог редактирования смены
     dialog: false,
+    select: null,
+    //Объект для всплывашки
     snackbar: {
       show: false,
       color: "green",
       text: "Сообщение",
-      timeout: 5000 //само пропадет через 5 сек
+      timeout: 5000
     },
     focus: null,
     type: "month",
@@ -151,17 +159,8 @@ export default {
     },
     start: null,
     end: null,
-    defaultEvent: {
-      id: "",
-      startDate: "",
-      startTime: "",
-      duration: "",
-      start: "",
-      end: "",
-      name: "",
-      color: "",
-      employeeId: ""
-    },
+
+    //Выбранная смена
     selectedEvent: {
       id: "",
       startDate: "",
@@ -170,12 +169,13 @@ export default {
       start: "",
       end: "",
       name: "",
+      fullName: "",
       color: "",
+      employee: null,
       employeeId: ""
     },
     selectedElement: null,
-    //  events: [],
-
+    //Тестовые данные - удалить !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  TODO
     events: [
       {
         name: "Иванов",
@@ -244,6 +244,22 @@ export default {
     }
   },
   computed: {
+    //Значения по умолчанию для новой смены
+    defaultEvent() {
+      return {
+        id: "",
+        startDate: new Date().toISOString().slice(0, 10),
+        startTime: "08:00",
+        duration: "12:00",
+        start: "",
+        end: "",
+        employeeId: this.Employees ? this.Employees[0].id : "",
+        employee: null,
+        name: "",
+        fullName: "",
+        color: ""
+      };
+    },
     formTitle() {
       return this.selectedEvent.id === ""
         ? "Добавить смену"
@@ -341,20 +357,61 @@ export default {
     next() {
       this.$refs.calendar.next();
     },
-    openShift({ nativeEvent, event }) {
-      this.dialog = true;
-      this.selectedEvent = event;
-      this.selectedEvent.startDate = this.selectedEvent.start.slice(0, 10);
-      this.selectedEvent.startTime = this.selectedEvent.start.slice(11, 16);
-      const theDiff =
-        new Date(this.selectedEvent.end).getTime() -
-        new Date(this.selectedEvent.start).getTime();
-      this.selectedEvent.duration = new Date(theDiff)
-        .toISOString()
-        .slice(11, 16);
+    /*
+id: "",
+        id: "",
+        startDate: new Date().toISOString().slice(0, 10),
+        startTime: "08:00",
+        duration: "12:00",
+        start: "",
+        end: "",
+        employeeId: this.Employees ? this.Employees[0].id : "",
+        employee: null,
+        name: "",
+        fullName: "",
+        color: ""*/
 
-      this.selectedElement = nativeEvent.target;
-      nativeEvent.stopPropagation();
+    openShift({ nativeEvent, event }) {
+      //Если чеерз аргумент пришло событие, то заполняем значения из него
+      this.selectedEvent = event ? event : this.defaultEvent;
+      //По employeeId возвращаем объект employee
+      this.selectedEvent.employee = this.Employees.find(
+        o => o.id === this.selectedEvent.employeeId
+      );
+      //Из объекта employee берем нужные данные
+      this.selectedEvent.name = this.selectedEvent.employee.fullName;
+      this.selectedEvent.fullName = this.selectedEvent.employee.fullName;
+      this.selectedEvent.color = this.selectedEvent.employee.visibleColor;
+      if (event) {
+        this.selectedEvent.startDate = this.selectedEvent.start.slice(0, 10);
+        this.selectedEvent.startTime = this.selectedEvent.start.slice(11, 16);
+        const theDiff =
+          new Date(this.selectedEvent.end).getTime() -
+          new Date(this.selectedEvent.start).getTime();
+        this.selectedEvent.duration = new Date(theDiff)
+          .toISOString()
+          .slice(11, 16);
+      } else {
+        this.selectedEvent.start =
+          this.selectedEvent.startDate +
+          " " +
+          this.selectedEvent.startTime +
+          ":00";
+        const theStart = new Date(this.selectedEvent.start);
+        this.selectedEvent.end = new Date(
+          theStart.getTime() -
+            theStart.getTimezoneOffset() * 60000 +
+            Number.parseInt(this.selectedEvent.duration.slice(0, 2)) * 3600000 +
+            Number.parseInt(this.selectedEvent.duration.slice(3, 5)) * 60000
+        );
+      }
+      //Показываем окно с диалогом
+      this.dialog = true;
+      
+      if (nativeEvent) {
+        this.selectedElement = nativeEvent.target;
+        nativeEvent.stopPropagation();
+      }
     },
     updateRange({ start, end }) {
       // You could load events from an outside source (like database) now that we have the start and end dates on the calendar

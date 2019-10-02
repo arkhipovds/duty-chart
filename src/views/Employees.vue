@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <div class="text-xs-center">
-      <v-dialog v-model="dialog" max-width="500px">
+      <v-dialog v-model="dialog" max-width="500px">  <!-- Диалог создания/правки карточки сотрудника -->
         <v-card>
           <v-card-title>
             <span class="headline">{{ formTitle }}</span>
