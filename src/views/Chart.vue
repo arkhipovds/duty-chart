@@ -32,9 +32,11 @@
         </v-toolbar>
       </v-sheet>
 
-      <!-- Место для отладки  TODO удалить -->
-      <h3>{{selectedEvent}}</h3>
+      <!-- Место для отладки  TODO удалить
+      <h3>{{selectedEvent}} - {{defaultEvent}}</h3>
+ -->
 
+        <!-- TODO  сделать календарь с понедельника -->
       <v-sheet>
         <!-- Календарь -->
         <v-calendar
@@ -48,8 +50,7 @@
           :event-margin-bottom="3"
           :type="type"
           @click:event="openShift"
-          @click:more="viewDay"
-          @change="updateRange"
+          @click:date="clickDate"
         ></v-calendar>
         <!-- Кнопка "добавить смену" -->
         <v-btn color="success" @click="openShift">
@@ -151,7 +152,7 @@ export default {
   data: () => ({
     //Открыт ли диалог редактирования смены
     dialog: false,
-    select: null,
+    selectedDay: "",
     //Объект для всплывашки
     snackbar: {
       show: false,
@@ -165,9 +166,6 @@ export default {
       month: "Месяц",
       week: "Неделя"
     },
-    start: null,
-    end: null,
-
     //Выбранная смена
     selectedEvent: {
       id: "",
@@ -182,66 +180,6 @@ export default {
       employee: null,
       employeeId: ""
     },
-    selectedElement: null,
-    //Тестовые данные - удалить !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  TODO
-    events: [
-      {
-        name: "Иванов",
-
-        start: "2019-09-01 08:00",
-        end: "2019-09-01 20:00",
-        color: "#FF00B2FF"
-      },
-      {
-        name: "Петров",
-
-        start: "2019-09-01 20:00",
-        end: "2019-09-02 08:00",
-        color: "deep-purple"
-      },
-      {
-        name: "Иванов",
-
-        start: "2019-09-02 08:00",
-        end: "2019-09-02 20:00",
-        color: "indigo"
-      },
-      {
-        name: "Петров",
-        details: "Типовой текст",
-        start: "2019-09-02 20:00",
-        end: "2019-09-03 08:00",
-        color: "deep-purple"
-      },
-      {
-        name: "Сидоров",
-        details: "Типовой текст",
-        start: "2019-09-03 08:00",
-        end: "2019-09-03 20:00",
-        color: "red"
-      },
-      {
-        name: "Огурцов",
-        details: "Типовой текст",
-        start: "2019-09-03 20:00",
-        end: "2019-09-04 08:00",
-        color: "green"
-      },
-      {
-        name: "Сидоров",
-        details: "Типовой текст",
-        start: "2019-09-04 08:00",
-        end: "2019-09-04 20:00",
-        color: "red"
-      },
-      {
-        name: "Огурцов",
-        details: "Типовой текст",
-        start: "2019-09-04 20:00",
-        end: "2019-09-05 08:00",
-        color: "green"
-      }
-    ]
   }),
   apollo: {
     Shifts: {
@@ -256,7 +194,7 @@ export default {
     defaultEvent() {
       return {
         id: "",
-        startDate: new Date().toISOString().slice(0, 10),
+        startDate: this.selectedDay ? this.selectedDay : (new Date().toISOString().slice(0, 10)),
         startTime: "08:00",
         duration: "12:00",
         start: "",
@@ -330,6 +268,10 @@ export default {
     this.$refs.calendar.checkChange();
   },
   methods: {
+    clickDate( {date}){
+      this.selectedDay = date.toString();
+      this.openShift(this.defaultEvent);
+    },
     close() {
       setTimeout(() => {
         this.selectedEvent = this.defaultEvent;
@@ -426,16 +368,6 @@ export default {
       }
       //Показываем окно с диалогом
       this.dialog = true;
-      /*
-      if (nativeEvent) {
-        this.selectedElement = nativeEvent.target;
-        nativeEvent.stopPropagation();
-      }*/
-    },
-    updateRange({ start, end }) {
-      // You could load events from an outside source (like database) now that we have the start and end dates on the calendar
-      this.start = start;
-      this.end = end;
     },
     nth(d) {
       return d > 3 && d < 21
@@ -462,9 +394,9 @@ export default {
         mutation: UPDATE_SHIFT_MUTATION,
         variables: {
           id: this.selectedEvent.id,
-          fullName: this.selectedEvent.start,
-          isRegular: this.selectedEvent.end,
-          visibleColor: this.selectedEvent.employeeId
+          start: this.selectedEvent.start,
+          end: this.selectedEvent.end,
+          employeeId: this.selectedEvent.employeeId
         },
         refetchQueries: [
           {

@@ -1,5 +1,7 @@
 <template>
   <v-row>
+    <h1>Тут будет оценка эффективности работы дежурных</h1>
+    <!--
     <v-col>
       <v-sheet height="500">
         <v-calendar
@@ -27,6 +29,7 @@
         </v-calendar>
       </v-sheet>
     </v-col>
+    -->
   </v-row>
 </template>
 
