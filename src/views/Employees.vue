@@ -239,8 +239,6 @@ export default {
       }, 300);
     },
     addEmployee() {
-      // после изменение данных читаем состояние в базе через запрос refetchQueries
-      // Vue обновит данные в интерфейсе сам
       this.$apollo.mutate({
         mutation: ADD_EMPLOYEE_MUTATION,
         variables: {

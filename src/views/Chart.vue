@@ -32,8 +32,8 @@
         </v-toolbar>
       </v-sheet>
 
-      <h3>{{selectedEvent}} - {{defaultEvent}}</h3>
       <!-- Место для отладки  TODO удалить -->
+      <h3>{{selectedEvent}}</h3>
 
       <v-sheet>
         <!-- Календарь -->
@@ -51,16 +51,18 @@
           @click:more="viewDay"
           @change="updateRange"
         ></v-calendar>
+        <!-- Кнопка "добавить смену" -->
         <v-btn color="success" @click="openShift">
-          <!-- Кнопка "добавить смену" -->
           <v-icon dark>mdi-plus</v-icon>Смена
         </v-btn>
 
-        <v-dialog v-model="dialog" :activator="selectedElement" max-width="500px">
+        <v-dialog v-model="dialog" max-width="500px">
           <!-- Диалог создания/правки смены -->
           <v-card>
             <v-card-title>
               <span class="headline">{{ formTitle }}</span>
+              <v-spacer></v-spacer>
+              <v-icon v-if="this.selectedEvent.id" @click="deleteShift">mdi-delete</v-icon>
             </v-card-title>
             <v-card-text>
               <v-container grid-list-md>
@@ -137,7 +139,13 @@
 </template>
 
 <script>
-import { ALL_SHIFTS_QUERY, ALL_EMPLOYEES_QUERY } from "@/queries/queries.js";
+import {
+  ALL_SHIFTS_QUERY,
+  ADD_SHIFT_MUTATION,
+  UPDATE_SHIFT_MUTATION,
+  DELETE_SHIFT_MUTATION,
+  ALL_EMPLOYEES_QUERY
+} from "@/queries/queries.js";
 
 export default {
   data: () => ({
@@ -324,16 +332,33 @@ export default {
   methods: {
     close() {
       setTimeout(() => {
-        this.selectedEvent = Object.assign({}, this.defaultEvent);
-        this.editedIndex = -1;
-      }, 300);
+        this.selectedEvent = this.defaultEvent;
+        this.dialog = false;
+      }, 50);
     },
     save() {
       var mode = "ИСПРАВЛЕНО!";
+      this.selectedEvent.start =
+        this.selectedEvent.startDate +
+        " " +
+        this.selectedEvent.startTime +
+        ":00";
+      const theStart = new Date(this.selectedEvent.start);
+      const tempDate = new Date(
+        theStart.getTime() -
+          theStart.getTimezoneOffset() * 60000 +
+          Number.parseInt(this.selectedEvent.duration.slice(0, 2)) * 3600000 +
+          Number.parseInt(this.selectedEvent.duration.slice(3, 5)) * 60000
+      );
+      this.selectedEvent.end =
+        tempDate.toISOString().slice(0, 10) +
+        " " +
+        tempDate.toISOString().slice(11, 16);
+      this.selectedEvent.employeeId = this.selectedEvent.employee.id;
       if (this.selectedEvent.id != "") {
-        //  this.updateEmployee();  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!здесь обновим событие (смену)
+        this.updateShift();
       } else {
-        //   this.addEmployee(); !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!здесь добавим событие (смену)
+        this.addShift();
         mode = "ДОБАВЛЕНО!";
       }
       this.snackbar.text = `${mode} ${this.selectedEvent.name}`;
@@ -357,21 +382,7 @@ export default {
     next() {
       this.$refs.calendar.next();
     },
-    /*
-id: "",
-        id: "",
-        startDate: new Date().toISOString().slice(0, 10),
-        startTime: "08:00",
-        duration: "12:00",
-        start: "",
-        end: "",
-        employeeId: this.Employees ? this.Employees[0].id : "",
-        employee: null,
-        name: "",
-        fullName: "",
-        color: ""*/
-
-    openShift({ nativeEvent, event }) {
+    openShift({ event }) {
       //Если чеерз аргумент пришло событие, то заполняем значения из него
       this.selectedEvent = event ? event : this.defaultEvent;
       //По employeeId возвращаем объект employee
@@ -382,7 +393,8 @@ id: "",
       this.selectedEvent.name = this.selectedEvent.employee.fullName;
       this.selectedEvent.fullName = this.selectedEvent.employee.fullName;
       this.selectedEvent.color = this.selectedEvent.employee.visibleColor;
-      if (event) {
+      //Если смена не новая (редактируем существующую)
+      if (this.selectedEvent.id.length != 0) {
         this.selectedEvent.startDate = this.selectedEvent.start.slice(0, 10);
         this.selectedEvent.startTime = this.selectedEvent.start.slice(11, 16);
         const theDiff =
@@ -391,27 +403,34 @@ id: "",
         this.selectedEvent.duration = new Date(theDiff)
           .toISOString()
           .slice(11, 16);
-      } else {
+        //тут будет UPDATE !!!!!!!!!!!!!!!!!!!!!TODO
+      }
+      //Если смена новая
+      else {
         this.selectedEvent.start =
           this.selectedEvent.startDate +
           " " +
           this.selectedEvent.startTime +
           ":00";
         const theStart = new Date(this.selectedEvent.start);
-        this.selectedEvent.end = new Date(
+        const tempDate = new Date(
           theStart.getTime() -
             theStart.getTimezoneOffset() * 60000 +
             Number.parseInt(this.selectedEvent.duration.slice(0, 2)) * 3600000 +
             Number.parseInt(this.selectedEvent.duration.slice(3, 5)) * 60000
         );
+        this.selectedEvent.end =
+          tempDate.toISOString().slice(0, 10) +
+          " " +
+          tempDate.toISOString().slice(11, 16);
       }
       //Показываем окно с диалогом
       this.dialog = true;
-      
+      /*
       if (nativeEvent) {
         this.selectedElement = nativeEvent.target;
         nativeEvent.stopPropagation();
-      }
+      }*/
     },
     updateRange({ start, end }) {
       // You could load events from an outside source (like database) now that we have the start and end dates on the calendar
@@ -422,6 +441,56 @@ id: "",
       return d > 3 && d < 21
         ? "th"
         : ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][d % 10];
+    },
+    addShift() {
+      this.$apollo.mutate({
+        mutation: ADD_SHIFT_MUTATION,
+        variables: {
+          start: this.selectedEvent.start,
+          end: this.selectedEvent.end,
+          employeeId: this.selectedEvent.employeeId
+        },
+        refetchQueries: [
+          {
+            query: ALL_SHIFTS_QUERY
+          }
+        ]
+      });
+    },
+    updateShift() {
+      this.$apollo.mutate({
+        mutation: UPDATE_SHIFT_MUTATION,
+        variables: {
+          id: this.selectedEvent.id,
+          fullName: this.selectedEvent.start,
+          isRegular: this.selectedEvent.end,
+          visibleColor: this.selectedEvent.employeeId
+        },
+        refetchQueries: [
+          {
+            query: ALL_SHIFTS_QUERY
+          }
+        ]
+      });
+    },
+    deleteShift() {
+      if (confirm("Удалить смену ?")) {
+        this.$apollo.mutate({
+          mutation: DELETE_SHIFT_MUTATION,
+          variables: {
+            id: this.selectedEvent.id
+          },
+          refetchQueries: [
+            {
+              query: ALL_SHIFTS_QUERY
+            }
+          ]
+        });
+        this.snackbar.text = `УДАЛЕНО! ${this.selectedEvent}`;
+        this.snackbar.color = "red";
+        this.snackbar.show = true;
+        this.dialog = false;
+      }
     }
   }
 };
