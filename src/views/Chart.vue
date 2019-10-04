@@ -37,8 +37,8 @@
       -->
 
       <!-- TODO  сделать календарь с понедельника -->
+      <!-- Календарь -->
       <v-sheet>
-        <!-- Календарь -->
         <v-calendar
           ref="calendar"
           v-model="focus"
@@ -52,70 +52,164 @@
           @click:event="openShift"
           @click:date="clickDate"
         ></v-calendar>
-        <!-- Кнопка "добавить смену" -->
-        <v-btn color="success" @click="openShift">
-          <v-icon dark>mdi-plus</v-icon>Смена
+        <!-- Кнопка "заполнить график" -->
+        <v-btn color="success" @click="dialogFillMonth.show=true">
+          <v-icon dark>mdi-plus</v-icon>Заполнить график на месяц
         </v-btn>
-
-        <v-dialog v-model="dialog" max-width="500px">
-          <!-- Диалог создания/правки смены -->
-          <v-card>
-            <v-card-title>
-              <span class="headline">{{ formTitle }}</span>
-              <v-spacer></v-spacer>
-              <v-icon v-if="this.selectedEvent.id" @click="addShiftsToEndOfMonth">mdi-keyboard-tab</v-icon>
-              <v-icon v-if="this.selectedEvent.id" @click="deleteShift">mdi-delete</v-icon>
-            </v-card-title>
-            <v-card-text>
-              <v-container grid-list-md>
-                <v-layout wrap>
-                  <v-flex xs12 sm6 md4>
-                    <v-select
-                      v-model="selectedEvent.employee"
-                      :items="Employees"
-                      item-text="fullName"
-                      item-value="id"
-                      label="123"
-                      persistent-hint
-                      return-object
-                      single-line
-                    ></v-select>
-                    <v-text-field
-                      ref="startDate"
-                      v-model="selectedEvent.startDate"
-                      label="Дата"
-                      type="date"
-                    ></v-text-field>
-                    <v-text-field
-                      ref="startTime"
-                      v-model="selectedEvent.startTime"
-                      label="Время"
-                      type="time"
-                    ></v-text-field>
-                    <v-text-field
-                      ref="duration"
-                      v-model="selectedEvent.duration"
-                      label="Длительность"
-                      type="time"
-                    ></v-text-field>
-                  </v-flex>
-                </v-layout>
-              </v-container>
-            </v-card-text>
-            <v-card-actions>
-              <v-spacer></v-spacer>
-              <v-btn color="red" text @click="close('')">Отмена</v-btn>
-              <v-btn color="green" text @click="save">Сохранить</v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
       </v-sheet>
-      <v-snackbar bottom right v-model="snackbar.show" :color="snackbar.color" :timeout="snackbar.timeout">
+
+      <!-- Всплывашка -->
+      <v-snackbar
+        bottom
+        right
+        v-model="snackbar.show"
+        :color="snackbar.color"
+        :timeout="snackbar.timeout"
+      >
         {{ snackbar.text }}
         <v-btn fab :color="snackbar.color" @click="snackbar.show = false">
           <v-icon dark>mdi-close</v-icon>
         </v-btn>
       </v-snackbar>
+
+      <!-- Диалог создания/правки смены -->
+      <v-dialog v-model="dialog" max-width="500px">
+        <v-card>
+          <v-card-title>
+            <span class="headline">{{ formTitle }}</span>
+            <v-spacer></v-spacer>
+            <v-icon v-if="this.selectedEvent.id" @click="addShiftsToEndOfMonth">mdi-keyboard-tab</v-icon>
+            <v-icon v-if="this.selectedEvent.id" @click="deleteShift">mdi-delete</v-icon>
+          </v-card-title>
+          <v-card-text>
+            <v-container grid-list-md>
+              <v-layout wrap>
+                <v-flex xs12 sm6 md4>
+                  <v-select
+                    v-model="selectedEvent.employee"
+                    :items="Employees"
+                    item-text="fullName"
+                    item-value="id"
+                    return-object
+                    single-line
+                  ></v-select>
+                  <v-text-field
+                    ref="startDate"
+                    v-model="selectedEvent.startDate"
+                    label="Дата"
+                    type="date"
+                  ></v-text-field>
+                  <v-text-field
+                    ref="startTime"
+                    v-model="selectedEvent.startTime"
+                    label="Время"
+                    type="time"
+                  ></v-text-field>
+                  <v-text-field
+                    ref="duration"
+                    v-model="selectedEvent.duration"
+                    label="Длительность"
+                    type="time"
+                  ></v-text-field>
+                </v-flex>
+              </v-layout>
+            </v-container>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="red" text @click="close('')">Отмена</v-btn>
+            <v-btn color="green" text @click="save">Сохранить</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <!-- Диалог заполнения графика на месяц -->
+      <v-dialog v-model="dialogFillMonth.show" max-width="600px">
+        <v-card>
+          <v-card-title>
+            <span class="headline">Заполнение графика на месяц</span>
+          </v-card-title>
+          <v-card-text>
+            <v-layout row wrap>
+              <v-select max-width="200"
+                v-model="dialogFillMonth.employee1"
+                :items="Employees"
+                hint="Первый сотрудник"                
+                item-text="fullName"
+                item-value="id"
+                persistent-hint
+                return-object
+                single-line
+              ></v-select>
+              <v-spacer></v-spacer>
+              <v-text-field
+                ref="startDate"
+                v-model="dialogFillMonth.startDate"
+                label="Дата"
+                type="date"
+              ></v-text-field>
+            </v-layout>
+            <v-layout row wrap>
+              <v-select max-width="200"
+                v-model="dialogFillMonth.employee2"
+                :items="Employees"
+                hint="Второй сотрудник"
+                item-text="fullName"
+                item-value="id"
+                persistent-hint
+                return-object
+                single-line
+              ></v-select>
+              <v-spacer></v-spacer>
+              <v-text-field
+                ref="startTime"
+                v-model="dialogFillMonth.startTime"
+                label="Время"
+                type="time"
+              ></v-text-field>
+            </v-layout>
+            <v-layout row wrap>
+              <v-select lg3 xl3 md3
+                v-model="dialogFillMonth.employee3"
+                :items="Employees"
+                hint="Третий сотрудник"
+                item-text="fullName"
+                item-value="id"
+                persistent-hint
+                return-object
+                single-line
+              ></v-select>
+
+              <v-spacer></v-spacer>
+
+              <v-text-field
+                ref="duration"
+                v-model="dialogFillMonth.duration"
+                label="Длительность"
+                type="time"
+              ></v-text-field>
+            </v-layout>
+            <v-layout row wrap>
+              <v-select
+                v-model="dialogFillMonth.employee4"
+                :items="Employees"
+                hint="Четвертый сотрудник"
+                item-text="fullName"
+                item-value="id"
+                persistent-hint
+                return-object
+                single-line
+              ></v-select>
+              <v-spacer></v-spacer>
+            </v-layout>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="red" text @click="close('')">Отмена</v-btn>
+            <v-btn color="green" text @click="save">Сохранить</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </v-col>
   </v-row>
 </template>
@@ -133,6 +227,17 @@ export default {
   data: () => ({
     //Открыт ли диалог редактирования смены
     dialog: false,
+    //Открыт ли диалог заполнения граифка на месяц
+    dialogFillMonth: {
+      show: false,
+      employee1: null,
+      employee2: null,
+      employee3: null,
+      employee4: null,
+      startDate: new Date().toISOString().slice(0, 10),
+      startTime: "08:00",
+      duration: "12:00"
+    },
     selectedDay: "",
     //Объект для всплывашки
     snackbar: {
@@ -251,9 +356,7 @@ export default {
     this.$refs.calendar.checkChange();
   },
   methods: {
-    addShiftsToEndOfMonth(){
-
-    },
+    addShiftsToEndOfMonth() {},
     clickDate({ date }) {
       this.selectedDay = date.toString();
       this.openShift(this.defaultEvent);
