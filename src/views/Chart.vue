@@ -1,8 +1,8 @@
 <template>
   <v-row class="fill-height">
     <v-col>
+      <!-- Панель навигации по календарю -->
       <v-sheet height="64">
-        <!-- Панель навигации по календарю -->
         <v-toolbar flat color="white">
           <v-btn outlined class="mr-4" @click="setToday">Сегодня</v-btn>
           <v-btn fab text small @click="prev">
@@ -34,9 +34,9 @@
 
       <!-- Место для отладки  TODO удалить
       <h3>{{selectedEvent}} - {{defaultEvent}}</h3>
- -->
+      -->
 
-        <!-- TODO  сделать календарь с понедельника -->
+      <!-- TODO  сделать календарь с понедельника -->
       <v-sheet>
         <!-- Календарь -->
         <v-calendar
@@ -45,7 +45,7 @@
           color="primary"
           locale="ru"
           interval-height="25"
-          :events="shift"
+          :events="shifts"
           :event-color="getEventColor"
           :event-margin-bottom="3"
           :type="type"
@@ -63,20 +63,13 @@
             <v-card-title>
               <span class="headline">{{ formTitle }}</span>
               <v-spacer></v-spacer>
+              <v-icon v-if="this.selectedEvent.id" @click="addShiftsToEndOfMonth">mdi-keyboard-tab</v-icon>
               <v-icon v-if="this.selectedEvent.id" @click="deleteShift">mdi-delete</v-icon>
             </v-card-title>
             <v-card-text>
               <v-container grid-list-md>
                 <v-layout wrap>
                   <v-flex xs12 sm6 md4>
-                    <!--
-                    <v-text-field
-                      ref="fullName"
-                      v-model="selectedEvent.name"
-                      label="ФИО"
-                      :color="selectedEvent.color"
-                    ></v-text-field>
-                    -->
                     <v-select
                       v-model="selectedEvent.employee"
                       :items="Employees"
@@ -87,18 +80,6 @@
                       return-object
                       single-line
                     ></v-select>
-
-                    <!--
-                    <v-autocomplete
-                      ref="fullName"
-                      v-model="selectedEvent.name"
-                      :rules="[() => !!country || 'This field is required']"
-                      :items="Employees.fullName"
-                      label="ФИО"
-                      placeholder="Select..."
-                      required
-                    ></v-autocomplete>
-                    -->
                     <v-text-field
                       ref="startDate"
                       v-model="selectedEvent.startDate"
@@ -123,15 +104,15 @@
             </v-card-text>
             <v-card-actions>
               <v-spacer></v-spacer>
-              <v-btn color="red darken-1" text @click="close">Отмена</v-btn>
-              <v-btn color="green darken-1" text @click="save">Сохранить</v-btn>
+              <v-btn color="red" text @click="close('')">Отмена</v-btn>
+              <v-btn color="green" text @click="save">Сохранить</v-btn>
             </v-card-actions>
           </v-card>
         </v-dialog>
       </v-sheet>
-      <v-snackbar v-model="snackbar.show" top :color="snackbar.color" :timeout="snackbar.timeout">
+      <v-snackbar bottom right v-model="snackbar.show" :color="snackbar.color" :timeout="snackbar.timeout">
         {{ snackbar.text }}
-        <v-btn fab text :color="snackbar.color" @click="snackbar.show = false">
+        <v-btn fab :color="snackbar.color" @click="snackbar.show = false">
           <v-icon dark>mdi-close</v-icon>
         </v-btn>
       </v-snackbar>
@@ -179,7 +160,7 @@ export default {
       color: "",
       employee: null,
       employeeId: ""
-    },
+    }
   }),
   apollo: {
     Shifts: {
@@ -194,7 +175,9 @@ export default {
     defaultEvent() {
       return {
         id: "",
-        startDate: this.selectedDay ? this.selectedDay : (new Date().toISOString().slice(0, 10)),
+        startDate: this.selectedDay
+          ? this.selectedDay
+          : new Date().toISOString().slice(0, 10),
         startTime: "08:00",
         duration: "12:00",
         start: "",
@@ -211,7 +194,7 @@ export default {
         ? "Добавить смену"
         : "Исправить смену";
     },
-    shift() {
+    shifts() {
       //!!!!!!!!!!!!!!!TODO переписать стрелочную функцию на нормальную, с проверками существования всех объектов и дефолтным поведением
       var newShifts = [];
       if (this.Shifts && this.Employees)
@@ -268,18 +251,26 @@ export default {
     this.$refs.calendar.checkChange();
   },
   methods: {
-    clickDate( {date}){
+    addShiftsToEndOfMonth(){
+
+    },
+    clickDate({ date }) {
       this.selectedDay = date.toString();
       this.openShift(this.defaultEvent);
     },
-    close() {
+    close(text, color) {
       setTimeout(() => {
         this.selectedEvent = this.defaultEvent;
         this.dialog = false;
       }, 50);
+      if (text) {
+        this.snackbar.text = text;
+        this.snackbar.color = color;
+        this.snackbar.show = true;
+      }
     },
     save() {
-      var mode = "ИСПРАВЛЕНО!";
+      var theText = "";
       this.selectedEvent.start =
         this.selectedEvent.startDate +
         " " +
@@ -299,18 +290,12 @@ export default {
       this.selectedEvent.employeeId = this.selectedEvent.employee.id;
       if (this.selectedEvent.id != "") {
         this.updateShift();
+        theText = "Смена обновлена";
       } else {
         this.addShift();
-        mode = "ДОБАВЛЕНО!";
+        theText = "Новая смена добавлена";
       }
-      this.snackbar.text = `${mode} ${this.selectedEvent.name}`;
-      this.snackbar.color = "green";
-      this.snackbar.show = true;
-      this.close();
-    },
-    viewDay({ date }) {
-      this.focus = date;
-      this.type = "day";
+      this.close(theText, "green");
     },
     getEventColor(event) {
       return event.color;
@@ -345,7 +330,6 @@ export default {
         this.selectedEvent.duration = new Date(theDiff)
           .toISOString()
           .slice(11, 16);
-        //тут будет UPDATE !!!!!!!!!!!!!!!!!!!!!TODO
       }
       //Если смена новая
       else {
@@ -418,10 +402,7 @@ export default {
             }
           ]
         });
-        this.snackbar.text = `УДАЛЕНО! ${this.selectedEvent}`;
-        this.snackbar.color = "red";
-        this.snackbar.show = true;
-        this.dialog = false;
+        this.close("Смена удалена", "red");
       }
     }
   }
