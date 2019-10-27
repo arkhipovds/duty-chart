@@ -32,9 +32,9 @@
         </v-toolbar>
       </v-sheet>
 
-      <!-- Место для отладки  TODO удалить
-      <h3>{{selectedEvent}} - {{defaultEvent}}</h3>
-      -->
+      <!-- Место для отладки  TODO удалить-->
+      <h3>{{shiftsSequence}}</h3>
+      
 
       <!-- TODO  сделать календарь с понедельника -->
       <!-- Календарь -->
@@ -52,13 +52,13 @@
           @click:event="openShift"
           @click:date="clickDate"
         ></v-calendar>
-        <!-- Кнопка "заполнить график" -->
+        <!-- Кнопка "заполнить график на месяц" -->
         <v-btn color="success" @click="dialogFillMonth.show=true">
           <v-icon dark>mdi-plus</v-icon>Заполнить график на месяц
         </v-btn>
       </v-sheet>
 
-      <!-- Всплывашка -->
+      <!-- Всплывашка после действий -->
       <v-snackbar
         bottom
         right
@@ -78,7 +78,6 @@
           <v-card-title>
             <span class="headline">{{ formTitle }}</span>
             <v-spacer></v-spacer>
-            <v-icon v-if="this.selectedEvent.id" @click="addShiftsToEndOfMonth">mdi-keyboard-tab</v-icon>
             <v-icon v-if="this.selectedEvent.id" @click="deleteShift">mdi-delete</v-icon>
           </v-card-title>
           <v-card-text>
@@ -118,7 +117,7 @@
           <v-card-actions>
             <v-spacer></v-spacer>
             <v-btn color="red" text @click="close('')">Отмена</v-btn>
-            <v-btn color="green" text @click="save">Сохранить</v-btn>
+            <v-btn color="green" text @click="saveShift">Сохранить</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -132,7 +131,7 @@
           <v-card-text>
             <v-layout row wrap>
               <v-select max-width="200"
-                v-model="dialogFillMonth.employee1"
+                v-model="dialogFillMonth.employees[0]"
                 :items="Employees"
                 hint="Первый сотрудник"                
                 item-text="fullName"
@@ -151,7 +150,7 @@
             </v-layout>
             <v-layout row wrap>
               <v-select max-width="200"
-                v-model="dialogFillMonth.employee2"
+                v-model="dialogFillMonth.employees[1]"
                 :items="Employees"
                 hint="Второй сотрудник"
                 item-text="fullName"
@@ -170,7 +169,7 @@
             </v-layout>
             <v-layout row wrap>
               <v-select lg3 xl3 md3
-                v-model="dialogFillMonth.employee3"
+                v-model="dialogFillMonth.employees[2]"
                 :items="Employees"
                 hint="Третий сотрудник"
                 item-text="fullName"
@@ -191,7 +190,7 @@
             </v-layout>
             <v-layout row wrap>
               <v-select
-                v-model="dialogFillMonth.employee4"
+                v-model="dialogFillMonth.employees[3]"
                 :items="Employees"
                 hint="Четвертый сотрудник"
                 item-text="fullName"
@@ -205,8 +204,8 @@
           </v-card-text>
           <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn color="red" text @click="close('')">Отмена</v-btn>
-            <v-btn color="green" text @click="save">Сохранить</v-btn>
+            <v-btn color="red" text @click="dialogFillMonth.show=false">Отмена</v-btn>
+            <v-btn color="green" text @click="fillShiftsForMonth">Заполнить</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -227,13 +226,10 @@ export default {
   data: () => ({
     //Открыт ли диалог редактирования смены
     dialog: false,
-    //Открыт ли диалог заполнения граифка на месяц
+    //Структура для диалога заполнения граифка на месяц
     dialogFillMonth: {
       show: false,
-      employee1: null,
-      employee2: null,
-      employee3: null,
-      employee4: null,
+      employees: [null, null, null, null],
       startDate: new Date().toISOString().slice(0, 10),
       startTime: "08:00",
       duration: "12:00"
@@ -265,7 +261,8 @@ export default {
       color: "",
       employee: null,
       employeeId: ""
-    }
+    },
+    shiftsSequence: [0,1,0,1,2,3,2,3,1,0,1,0,3,2,3,2]
   }),
   apollo: {
     Shifts: {
@@ -372,7 +369,7 @@ export default {
         this.snackbar.show = true;
       }
     },
-    save() {
+    saveShift() {
       var theText = "";
       this.selectedEvent.start =
         this.selectedEvent.startDate +
@@ -392,13 +389,52 @@ export default {
         tempDate.toISOString().slice(11, 16);
       this.selectedEvent.employeeId = this.selectedEvent.employee.id;
       if (this.selectedEvent.id != "") {
-        this.updateShift();
+        this.updateShift(this.selectedEvent);
         theText = "Смена обновлена";
       } else {
-        this.addShift();
+        this.addShift(this.selectedEvent);
         theText = "Новая смена добавлена";
       }
       this.close(theText, "green");
+    },
+    //Преобразовывает UNIX-time в строку в формате "YYYY-MM-DD HH:MM"
+    msToDateString(ms){
+      const tempDate = new Date(ms);
+      const tempString =
+        tempDate.toISOString().slice(0, 10) +
+        " " +
+        tempDate.toISOString().slice(11, 16);
+      return tempString;
+    },
+    fillShiftsForMonth (){
+      //вычисляем UNIX-time начала первой смены
+      var iStartTime = (new Date(this.dialogFillMonth.startDate)).getTime() + 
+        this.dialogFillMonth.startTime.slice(0, 2) * 3600000 + 
+        this.dialogFillMonth.startTime.slice(3, 5) * 60000;
+      //вычисляем месяц, который будем заполнять сменами
+      const tempStartMonth = (new Date(iStartTime)).getMonth();
+      //месяц окончания рассчитываемой смены
+      var tempCurrentMonth = tempStartMonth;
+      //переводим длительность смены в мс
+      const iDuration = this.dialogFillMonth.duration.slice(0, 2) * 3600000 + 
+        this.dialogFillMonth.duration.slice(3, 5) * 60000;
+      while(tempCurrentMonth == tempStartMonth){
+        for (let employee of this.shiftsSequence) {
+          var tempEvent = {
+            start: this.msToDateString(iStartTime),
+            end: this.msToDateString(iStartTime + iDuration),
+            employeeId: this.dialogFillMonth.employees[employee].id
+          }
+          this.addShift(tempEvent);
+          iStartTime += iDuration;
+          tempCurrentMonth = (new Date(tempEvent.end)).getMonth();
+          /*
+          if(tempCurrentMonth != tempStartMonth)
+            break;
+          */
+        }
+      }
+      this.dialogFillMonth.show = false;
     },
     getEventColor(event) {
       return event.color;
@@ -461,13 +497,13 @@ export default {
         ? "th"
         : ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][d % 10];
     },
-    addShift() {
+    addShift(event) {
       this.$apollo.mutate({
         mutation: ADD_SHIFT_MUTATION,
         variables: {
-          start: this.selectedEvent.start,
-          end: this.selectedEvent.end,
-          employeeId: this.selectedEvent.employeeId
+          start: event.start,
+          end: event.end,
+          employeeId: event.employeeId
         },
         refetchQueries: [
           {
@@ -476,14 +512,14 @@ export default {
         ]
       });
     },
-    updateShift() {
+    updateShift(event) {
       this.$apollo.mutate({
         mutation: UPDATE_SHIFT_MUTATION,
         variables: {
-          id: this.selectedEvent.id,
-          start: this.selectedEvent.start,
-          end: this.selectedEvent.end,
-          employeeId: this.selectedEvent.employeeId
+          id: event.id,
+          start: event.start,
+          end: event.end,
+          employeeId: event.employeeId
         },
         refetchQueries: [
           {

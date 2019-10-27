@@ -72,6 +72,17 @@ query Employees {
     }
 }
 `;
+//Запрос списка активных сотрудников
+export const ACTIVE_EMPLOYEES_QUERY = gql`
+query Employees {
+    activeEmployees {
+        id,
+        fullName,
+        isRegular,
+        visibleColor
+    }
+}
+`;
 //Запрос на добавление сотрудника
 export const ADD_EMPLOYEE_MUTATION = gql`
     mutation($fullName: String!, $isRegular: Boolean!, $visibleColor: String!) {

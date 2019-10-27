@@ -60,7 +60,7 @@
       -->
       <v-data-table
         :headers="headers"
-        :items="Employees"
+        :items="activeEmployees"
         :page.sync="pagination.page"
         :items-per-page="pagination.rowsPerPage"
         item-key="id"
@@ -117,7 +117,7 @@
 <script>
 // Import queries from queries.js
 import {
-  ALL_EMPLOYEES_QUERY,
+  ACTIVE_EMPLOYEES_QUERY,
   ADD_EMPLOYEE_MUTATION,
   UPDATE_EMPLOYEE_MUTATION,
   DELETE_EMPLOYEE_MUTATION
@@ -188,26 +188,26 @@ export default {
     };
   },
   apollo: {
-    Employees: {
-      query: ALL_EMPLOYEES_QUERY
+    activeEmployees: {
+      query: ACTIVE_EMPLOYEES_QUERY
     },
   },
   computed: {
     formTitle() {
       return this.editedItem.id === ""
         ? "Добавить сотрудника"
-        : "Исправить :) сотрудника";
+        : "Изменить данные сотрудника";
     },
     pages() {
       // если количество записей на странице нулевое, то на ноль делить нельзя
       // выводим сразу количество страниц 0 и пагинатора не будет
       if (
-        this.Employees &&
+        this.activeEmployees &&
         (this.pagination.rowsPerPage != null ||
           this.pagination.rowsPerPage != 0)
       ) {
         // если данные с бэкенда есть, то считаем
-        return Math.ceil(this.Employees.length / this.pagination.rowsPerPage);
+        return Math.ceil(this.activeEmployees.length / this.pagination.rowsPerPage);
       } else return 0; //
     }
   },
@@ -215,22 +215,13 @@ export default {
     pages() {
       // отслеживаем изменение расчета страниц, если оно было, то данные есть с бэкенда
       // и загрузчик выключаем
-      if (this.Employees) this.loading = false;
+      if (this.activeEmployees) this.loading = false;
     },
     dialog(val) {
       val || this.close();
     }
   },
   methods: {
-    /*
-    test() {
-      var data3 = this.Employees.map(n => ({
-        value: n.id,
-        label: n.fullName
-      }));
-      return data3;
-    },
-    */
     close() {
       this.dialog = false;
       setTimeout(() => {
@@ -248,7 +239,7 @@ export default {
         },
         refetchQueries: [
           {
-            query: ALL_EMPLOYEES_QUERY
+            query: ACTIVE_EMPLOYEES_QUERY
           }
         ]
       });
@@ -262,7 +253,7 @@ export default {
           },
           refetchQueries: [
             {
-              query: ALL_EMPLOYEES_QUERY
+              query: ACTIVE_EMPLOYEES_QUERY
             }
           ]
         });
@@ -292,7 +283,7 @@ export default {
         },
         refetchQueries: [
           {
-            query: ALL_EMPLOYEES_QUERY
+            query: ACTIVE_EMPLOYEES_QUERY
           }
         ]
       });
