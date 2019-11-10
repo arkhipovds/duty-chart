@@ -13,6 +13,11 @@
           </v-btn>
           <v-toolbar-title>{{ title }}</v-toolbar-title>
           <div class="flex-grow-1"></div>
+          <!-- Кнопка "заполнить график на месяц" -->
+          <v-btn color="success" @click="dialogFillMonth.show=true">
+            <v-icon dark>mdi-plus</v-icon>Заполнить график на месяц
+          </v-btn>
+          <v-spacer></v-spacer>
           <v-menu bottom right>
             <template v-slot:activator="{ on }">
               <v-btn outlined v-on="on">
@@ -20,6 +25,7 @@
                 <v-icon right>mdi-menu-down</v-icon>
               </v-btn>
             </template>
+
             <v-list>
               <v-list-item @click="type = 'week'">
                 <v-list-item-title>Неделя</v-list-item-title>
@@ -33,8 +39,7 @@
       </v-sheet>
 
       <!-- Место для отладки  TODO удалить-->
-      <h3>{{shiftsSequence}}</h3>
-      
+      <h3>{{dialogShift}} --- {{focus}}</h3>
 
       <!-- TODO  сделать календарь с понедельника -->
       <!-- Календарь -->
@@ -49,13 +54,9 @@
           :event-color="getEventColor"
           :event-margin-bottom="3"
           :type="type"
-          @click:event="openShift"
+          @click:event="openShiftDialog"
           @click:date="clickDate"
         ></v-calendar>
-        <!-- Кнопка "заполнить график на месяц" -->
-        <v-btn color="success" @click="dialogFillMonth.show=true">
-          <v-icon dark>mdi-plus</v-icon>Заполнить график на месяц
-        </v-btn>
       </v-sheet>
 
       <!-- Всплывашка после действий -->
@@ -73,19 +74,19 @@
       </v-snackbar>
 
       <!-- Диалог создания/правки смены -->
-      <v-dialog v-model="dialog" max-width="500px">
+      <v-dialog v-model="this.dialogShift.show" max-width="500px">
         <v-card>
           <v-card-title>
             <span class="headline">{{ formTitle }}</span>
             <v-spacer></v-spacer>
-            <v-icon v-if="this.selectedEvent.id" @click="deleteShift">mdi-delete</v-icon>
+            <v-icon v-if="this.dialogShift.id" @click="deleteShiftInDB">mdi-delete</v-icon>
           </v-card-title>
           <v-card-text>
             <v-container grid-list-md>
               <v-layout wrap>
                 <v-flex xs12 sm6 md4>
                   <v-select
-                    v-model="selectedEvent.employee"
+                    v-model="dialogShift.employee"
                     :items="Employees"
                     item-text="fullName"
                     item-value="id"
@@ -94,19 +95,19 @@
                   ></v-select>
                   <v-text-field
                     ref="startDate"
-                    v-model="selectedEvent.startDate"
+                    v-model="dialogShift.startDate"
                     label="Дата"
                     type="date"
                   ></v-text-field>
                   <v-text-field
                     ref="startTime"
-                    v-model="selectedEvent.startTime"
+                    v-model="dialogShift.startTime"
                     label="Время"
                     type="time"
                   ></v-text-field>
                   <v-text-field
                     ref="duration"
-                    v-model="selectedEvent.duration"
+                    v-model="dialogShift.duration"
                     label="Длительность"
                     type="time"
                   ></v-text-field>
@@ -116,7 +117,7 @@
           </v-card-text>
           <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn color="red" text @click="close('')">Отмена</v-btn>
+            <v-btn color="red" text @click="closeShiftDialog('')">Отмена</v-btn>
             <v-btn color="green" text @click="saveShift">Сохранить</v-btn>
           </v-card-actions>
         </v-card>
@@ -130,10 +131,11 @@
           </v-card-title>
           <v-card-text>
             <v-layout row wrap>
-              <v-select max-width="200"
+              <v-select
+                max-width="200"
                 v-model="dialogFillMonth.employees[0]"
                 :items="Employees"
-                hint="Первый сотрудник"                
+                hint="Первый сотрудник"
                 item-text="fullName"
                 item-value="id"
                 persistent-hint
@@ -149,7 +151,8 @@
               ></v-text-field>
             </v-layout>
             <v-layout row wrap>
-              <v-select max-width="200"
+              <v-select
+                max-width="200"
                 v-model="dialogFillMonth.employees[1]"
                 :items="Employees"
                 hint="Второй сотрудник"
@@ -168,7 +171,10 @@
               ></v-text-field>
             </v-layout>
             <v-layout row wrap>
-              <v-select lg3 xl3 md3
+              <v-select
+                lg3
+                xl3
+                md3
                 v-model="dialogFillMonth.employees[2]"
                 :items="Employees"
                 hint="Третий сотрудник"
@@ -223,87 +229,97 @@ import {
 } from "@/queries/queries.js";
 
 export default {
-  data: () => ({
-    //Открыт ли диалог редактирования смены
-    dialog: false,
-    //Структура для диалога заполнения граифка на месяц
-    dialogFillMonth: {
-      show: false,
-      employees: [null, null, null, null],
-      startDate: new Date().toISOString().slice(0, 10),
-      startTime: "08:00",
-      duration: "12:00"
-    },
-    selectedDay: "",
-    //Объект для всплывашки
-    snackbar: {
-      show: false,
-      color: "green",
-      text: "Сообщение",
-      timeout: 5000
-    },
-    focus: null,
-    type: "month",
-    typeToLabel: {
-      month: "Месяц",
-      week: "Неделя"
-    },
-    //Выбранная смена
-    selectedEvent: {
-      id: "",
-      startDate: "",
-      startTime: "",
-      duration: "",
-      start: "",
-      end: "",
-      name: "",
-      fullName: "",
-      color: "",
-      employee: null,
-      employeeId: ""
-    },
-    shiftsSequence: [0,1,0,1,2,3,2,3,1,0,1,0,3,2,3,2]
-  }),
+  //Запрашиваем данные о сменах и сотрудниках из БД
   apollo: {
     Shifts: {
-      query: ALL_SHIFTS_QUERY
+      query: ALL_SHIFTS_QUERY,
+      variables() {
+        return {
+          utPointInMonth: this.calendarFocus 
+        }
+      },
+      skip() {
+        return !this.calendarFocus;
+      }
     },
     Employees: {
       query: ALL_EMPLOYEES_QUERY
     }
   },
-  computed: {
-    //Значения по умолчанию для новой смены
-    defaultEvent() {
-      return {
-        id: "",
-        startDate: this.selectedDay
-          ? this.selectedDay
-          : new Date().toISOString().slice(0, 10),
+  //Данные для интерфейса
+  data() {
+    return {
+      //Структура для диалога заполнения граифка на месяц
+      dialogFillMonth: {
+        show: false,
+        employees: [null, null, null, null],
+        startDate: new Date().toISOString().slice(0, 10),
         startTime: "08:00",
         duration: "12:00",
-        start: "",
-        end: "",
-        employeeId: this.Employees ? this.Employees[0].id : "",
+        //Порядок смен при заполнении месяца
+        shiftsSequence: [0, 1, 0, 1, 2, 3, 2, 3, 1, 0, 1, 0, 3, 2, 3, 2]
+      },
+      //Выбранный в календаре день
+      selectedDay: "",
+      //Объект для всплывашки
+      snackbar: {
+        show: false,
+        color: "green",
+        text: "Сообщение",
+        timeout: 5000
+      },
+      //Фокус календаря
+      focus: new Date().toISOString(),
+      type: "month",
+      typeToLabel: {
+        month: "Месяц",
+        week: "Неделя"
+      },
+      //Структура для диалога с карточкой смены
+      dialogShift: {
+        //Идентификатор
+        id: "",
+        //Открыт ли диалог
+        show: false,
+        //Новая смена?
+        isNew: false,
+        //Значение поля "Сотрудник" карточки смены
         employee: null,
-        name: "",
-        fullName: "",
-        color: ""
-      };
+        //Значение поля "Дата" карточки смены
+        startDate: "",
+        //Значение поля "Время" карточки смены
+        startTime: "",
+        //Значение поля "Длительность" карточки смены
+        duration: "",
+        //Начало смены в UNIX-time формате
+        utStart: 0,
+        //Конец смены в UNIX-time формате
+        utEnd: 0,
+        //Длительность смены в UNIX-time формате
+        utDuration: 0
+      }
+    };
+  },
+  computed: {
+    calendarFocus() {
+      //alert(this.focus);
+      return this.focus
+        ? new Date(this.focus).getTime().toString()
+        : new Date().getTime().toString();
     },
+    //Формируем заголовок карточки смены
     formTitle() {
-      return this.selectedEvent.id === ""
-        ? "Добавить смену"
-        : "Исправить смену";
+      return this.dialogShift.isNew ? "Добавить смену" : "Исправить смену";
     },
+    //Преобразовываем массив со сменами в формат, подходящий для календаря
     shifts() {
       //!!!!!!!!!!!!!!!TODO переписать стрелочную функцию на нормальную, с проверками существования всех объектов и дефолтным поведением
       var newShifts = [];
       if (this.Shifts && this.Employees)
         newShifts = this.Shifts.map(n => ({
           id: n.id,
-          start: n.start,
-          end: n.end,
+          start: this.msToDateString(n.start),
+          end: this.msToDateString(n.end),
           name: this.Employees[
             this.Employees.findIndex(el => el.id === n.employeeId)
           ].fullName,
@@ -344,94 +360,128 @@ export default {
         timeZone: "UTC",
         month: "long"
       });
-    },
-    nowTime() {
-      return new Date();
     }
   },
   mounted() {
     this.$refs.calendar.checkChange();
   },
   methods: {
-    addShiftsToEndOfMonth() {},
     clickDate({ date }) {
       this.selectedDay = date.toString();
-      this.openShift(this.defaultEvent);
+      this.dialogShift.isNew = true;
+      this.openShiftDialog({});
     },
-    close(text, color) {
-      setTimeout(() => {
-        this.selectedEvent = this.defaultEvent;
-        this.dialog = false;
-      }, 50);
+    //Открыть диалог с карточкой смены
+    openShiftDialog({ event }) {
+      //Если смена не новая (редактируем существующую)
+      if (event) {
+        //Записываем идентификатор выбранного события
+        this.dialogShift.id = event.id;
+        //По employeeId возвращаем объект employee
+        this.dialogShift.employee = this.Employees.find(
+          o => o.id === event.employeeId
+        );
+        this.dialogShift.startDate = event.start.slice(0, 10);
+        this.dialogShift.startTime = event.start.slice(11, 16);
+
+        const theDiff =
+          new Date(event.end).getTime() - new Date(event.start).getTime();
+        this.dialogShift.duration = new Date(theDiff)
+          .toISOString()
+          .slice(11, 16);
+      }
+      //Если смена новая
+      else {
+        this.dialogShift.startDate = this.selectedDay;
+        this.dialogShift.employee = this.Employees[0]
+          ? this.Employees[0]
+          : null;
+        this.dialogShift.startTime = "08:00";
+        this.dialogShift.duration = "12:00";
+      }
+      //Показываем окно с диалогом
+      this.dialogShift.show = true;
+    },
+    //Обработчик кнопки "Отмена" в карточке смены
+    closeShiftDialog(text, color) {
+      this.defaultShift();
+      //this.dialogShift.show = false;
+      //this.dialogShift.isNew = false;
+      //Показываем всплывашку, если переменная с текстом не пустая
       if (text) {
         this.snackbar.text = text;
         this.snackbar.color = color;
         this.snackbar.show = true;
       }
     },
+    //Обработчик кнопки "Сохранить" в карточке смены
     saveShift() {
+      //Текст всплывашки
       var theText = "";
-      this.selectedEvent.start =
-        this.selectedEvent.startDate +
-        " " +
-        this.selectedEvent.startTime +
-        ":00";
-      const theStart = new Date(this.selectedEvent.start);
-      const tempDate = new Date(
-        theStart.getTime() -
-          theStart.getTimezoneOffset() * 60000 +
-          Number.parseInt(this.selectedEvent.duration.slice(0, 2)) * 3600000 +
-          Number.parseInt(this.selectedEvent.duration.slice(3, 5)) * 60000
-      );
-      this.selectedEvent.end =
-        tempDate.toISOString().slice(0, 10) +
-        " " +
-        tempDate.toISOString().slice(11, 16);
-      this.selectedEvent.employeeId = this.selectedEvent.employee.id;
-      if (this.selectedEvent.id != "") {
-        this.updateShift(this.selectedEvent);
+      //Заполняем ID сотрудника смены
+      //this.dialogShift.employeeId = this.dialogShift.employee.id;
+      //Вычисляем UNIX-time начала смены
+      this.dialogShift.utStart =
+        new Date(this.dialogShift.startDate).getTime() +
+        this.dialogShift.startTime.slice(0, 2) * 3600000 +
+        this.dialogShift.startTime.slice(3, 5) * 60000;
+      //Переводим длительность смены в мс
+      this.dialogShift.utDuration =
+        this.dialogShift.duration.slice(0, 2) * 3600000 +
+        this.dialogShift.duration.slice(3, 5) * 60000;
+      //Вычисляем UNIX-time конца смены
+      this.dialogShift.utEnd =
+        this.dialogShift.utStart + this.dialogShift.utDuration;
+      //Если выбрана существующая смена, то обновляем ее значение, иначе создаем новую смену
+      if (this.dialogShift.isNew == false) {
+        this.updateShiftInDB(this.dialogShift);
         theText = "Смена обновлена";
       } else {
-        this.addShift(this.selectedEvent);
+        this.addShiftInDB(this.dialogShift);
         theText = "Новая смена добавлена";
       }
-      this.close(theText, "green");
+      //Закрываем окно с показом вчплывашки
+      this.closeShiftDialog(theText, "green");
     },
-    //Преобразовывает UNIX-time в строку в формате "YYYY-MM-DD HH:MM"
-    msToDateString(ms){
-      const tempDate = new Date(ms);
-      const tempString =
-        tempDate.toISOString().slice(0, 10) +
-        " " +
-        tempDate.toISOString().slice(11, 16);
-      return tempString;
+    //Значения по умолчанию для смены
+    defaultShift() {
+      this.dialogShift.id = "";
+      this.dialogShift.show = false;
+      this.dialogShift.isNew = false;
+      this.dialogShift.employee = null;
+      this.dialogShift.startDate = "";
+      this.dialogShift.startTime = "";
+      this.dialogShift.duration = "";
+      this.dialogShift.utStart = 0;
+      this.dialogShift.utEnd = 0;
+      this.dialogShift.utDuration = 0;
     },
-    fillShiftsForMonth (){
+    //Заполнить график до конца месяца
+    fillShiftsForMonth() {
       //вычисляем UNIX-time начала первой смены
-      var iStartTime = (new Date(this.dialogFillMonth.startDate)).getTime() + 
-        this.dialogFillMonth.startTime.slice(0, 2) * 3600000 + 
+      var iStartTime =
+        new Date(this.dialogFillMonth.startDate).getTime() +
+        this.dialogFillMonth.startTime.slice(0, 2) * 3600000 +
         this.dialogFillMonth.startTime.slice(3, 5) * 60000;
       //вычисляем месяц, который будем заполнять сменами
-      const tempStartMonth = (new Date(iStartTime)).getMonth();
+      const tempStartMonth = new Date(iStartTime).getMonth();
       //месяц окончания рассчитываемой смены
       var tempCurrentMonth = tempStartMonth;
       //переводим длительность смены в мс
-      const iDuration = this.dialogFillMonth.duration.slice(0, 2) * 3600000 + 
+      const iDuration =
+        this.dialogFillMonth.duration.slice(0, 2) * 3600000 +
         this.dialogFillMonth.duration.slice(3, 5) * 60000;
-      while(tempCurrentMonth == tempStartMonth){
-        for (let employee of this.shiftsSequence) {
+      //Пока не залезем на следующий месяц, заполняем график
+      while (tempCurrentMonth == tempStartMonth) {
+        for (let employee of this.dialogFillMonth.shiftsSequence) {
           var tempEvent = {
-            start: this.msToDateString(iStartTime),
-            end: this.msToDateString(iStartTime + iDuration),
-            employeeId: this.dialogFillMonth.employees[employee].id
-          }
-          this.addShift(tempEvent);
+            utStart: iStartTime,
+            utEnd: iStartTime + iDuration,
+            employee: this.dialogFillMonth.employees[employee]
+          };
+          this.addShiftInDB(tempEvent);
           iStartTime += iDuration;
-          tempCurrentMonth = (new Date(tempEvent.end)).getMonth();
-          /*
-          if(tempCurrentMonth != tempStartMonth)
-            break;
-          */
+          tempCurrentMonth = new Date(tempEvent.utEnd).getMonth();
         }
       }
       this.dialogFillMonth.show = false;
@@ -444,105 +494,93 @@ export default {
     },
     prev() {
       this.$refs.calendar.prev();
+      //Запрашиваем список смен
+      this.$apollo.queries.Shifts.refetch();
     },
     next() {
       this.$refs.calendar.next();
-    },
-    openShift({ event }) {
-      //Если чеерз аргумент пришло событие, то заполняем значения из него
-      this.selectedEvent = event ? event : this.defaultEvent;
-      //По employeeId возвращаем объект employee
-      this.selectedEvent.employee = this.Employees.find(
-        o => o.id === this.selectedEvent.employeeId
-      );
-      //Из объекта employee берем нужные данные
-      this.selectedEvent.name = this.selectedEvent.employee.fullName;
-      this.selectedEvent.fullName = this.selectedEvent.employee.fullName;
-      this.selectedEvent.color = this.selectedEvent.employee.visibleColor;
-      //Если смена не новая (редактируем существующую)
-      if (this.selectedEvent.id.length != 0) {
-        this.selectedEvent.startDate = this.selectedEvent.start.slice(0, 10);
-        this.selectedEvent.startTime = this.selectedEvent.start.slice(11, 16);
-        const theDiff =
-          new Date(this.selectedEvent.end).getTime() -
-          new Date(this.selectedEvent.start).getTime();
-        this.selectedEvent.duration = new Date(theDiff)
-          .toISOString()
-          .slice(11, 16);
-      }
-      //Если смена новая
-      else {
-        this.selectedEvent.start =
-          this.selectedEvent.startDate +
-          " " +
-          this.selectedEvent.startTime +
-          ":00";
-        const theStart = new Date(this.selectedEvent.start);
-        const tempDate = new Date(
-          theStart.getTime() -
-            theStart.getTimezoneOffset() * 60000 +
-            Number.parseInt(this.selectedEvent.duration.slice(0, 2)) * 3600000 +
-            Number.parseInt(this.selectedEvent.duration.slice(3, 5)) * 60000
-        );
-        this.selectedEvent.end =
-          tempDate.toISOString().slice(0, 10) +
-          " " +
-          tempDate.toISOString().slice(11, 16);
-      }
-      //Показываем окно с диалогом
-      this.dialog = true;
+      //Запрашиваем список смен
+      this.$apollo.query({
+        query: ALL_SHIFTS_QUERY,
+        variables: {
+          utPointInMonth: new Date(this.focus).getTime().toString()
+        }
+      });
     },
     nth(d) {
       return d > 3 && d < 21
         ? "th"
         : ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][d % 10];
     },
-    addShift(event) {
+
+    //Добавить смену в БД
+    addShiftInDB(event) {
       this.$apollo.mutate({
         mutation: ADD_SHIFT_MUTATION,
         variables: {
-          start: event.start,
-          end: event.end,
-          employeeId: event.employeeId
+          start: event.utStart.toString(),
+          end: event.utEnd.toString(),
+          employeeId: event.employee.id
         },
         refetchQueries: [
           {
-            query: ALL_SHIFTS_QUERY
+            query: ALL_SHIFTS_QUERY,
+            variables: {
+              utPointInMonth: new Date(this.focus).getTime().toString()
+            }
           }
         ]
       });
     },
-    updateShift(event) {
+    //Обновить смену в БД
+    updateShiftInDB(event) {
       this.$apollo.mutate({
         mutation: UPDATE_SHIFT_MUTATION,
         variables: {
           id: event.id,
-          start: event.start,
-          end: event.end,
-          employeeId: event.employeeId
+          start: event.utStart.toString(),
+          end: event.utEnd.toString(),
+          employeeId: event.employee.id
         },
         refetchQueries: [
           {
-            query: ALL_SHIFTS_QUERY
+            query: ALL_SHIFTS_QUERY,
+            variables: {
+              utPointInMonth: new Date(this.focus).getTime().toString()
+            }
           }
         ]
       });
     },
-    deleteShift() {
+    //Удалить смену из БД
+    deleteShiftInDB() {
       if (confirm("Удалить смену ?")) {
         this.$apollo.mutate({
           mutation: DELETE_SHIFT_MUTATION,
           variables: {
-            id: this.selectedEvent.id
+            id: this.dialogShift.id
           },
           refetchQueries: [
             {
-              query: ALL_SHIFTS_QUERY
+              query: ALL_SHIFTS_QUERY,
+              variables: {
+                utPointInMonth: new Date(this.focus).getTime().toString()
+              }
             }
           ]
         });
-        this.close("Смена удалена", "red");
+        this.closeShiftDialog("Смена удалена", "red");
       }
+    },
+
+    //Преобразовывает UNIX-time (в мс) в строку в формате "YYYY-MM-DD HH:MM"
+    msToDateString(ms) {
+      const tempDate = new Date(Number.parseInt(ms));
+      const tempString =
+        tempDate.toISOString().slice(0, 10) +
+        " " +
+        tempDate.toISOString().slice(11, 16);
+      return tempString;
     }
   }
 };

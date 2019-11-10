@@ -1,41 +1,16 @@
 <template>
   <div>
     <h1>Тут будет оценка эффективности работы дежурных</h1>
-
-    <v-layout wrap>
-      <v-flex xs12>
-        <v-form v-model="valid" ref="form">
-          <v-layout  wrap>
-            <v-flex xs3 v-for="option in selectOptions" :key="option.text">
-              <v-checkbox :label="option.text" v-model="selected" :value="option.value"></v-checkbox>
-            </v-flex>
-            <v-flex xs3>
-              <v-btn small class="primary">save</v-btn>
-            </v-flex>
-          </v-layout>
-        </v-form>
-        <p>selected options : {{selected}}</p>
-      </v-flex>
-    </v-layout>
   </div>
 </template>
 
 
 <script>
-    export default{
-        data(){
-            return {
-                valid: false,
-                selected:[],
-                selectOptions:[
-                    {text: 'Apples', value: 'apple'},
-                    {text: 'Oranges', value: 'orange'},
-                    {text: 'Grapes', value: 'grape'}
-                ]
-            }
-        },
-        }
-    
+export default {
+  data() {
+    return {};
+  }
+};
 </script> 
     <!--
     <v-col>
