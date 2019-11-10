@@ -51,13 +51,10 @@
           width="200px"
         ></v-text-field>
         <v-spacer></v-spacer>
-        <v-btn color="green" dark class="mb-2" @click="dialog=true">
-          <v-icon dark>mdi-plus</v-icon>Сотрудник
+        <v-btn fab text small @click="dialog=true">
+          <v-icon color="green">mdi-account-plus</v-icon>
         </v-btn>
       </v-toolbar>
-      <!-- 
-        :page.sync="pagination.page" // текущая страница
-      -->
       <v-data-table
         :headers="headers"
         :items="activeEmployees"

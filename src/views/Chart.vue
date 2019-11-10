@@ -4,44 +4,40 @@
       <!-- Панель навигации по календарю -->
       <v-sheet height="64">
         <v-toolbar flat color="white">
-          <v-btn outlined class="mr-4" @click="setToday">Сегодня</v-btn>
+          <!-- Кнопка "Сегодня" -->
+          <v-btn fab text small @click="setToday">
+            <v-icon>mdi-calendar-today</v-icon>
+          </v-btn>
+          <!-- Кнопка "Назад" -->
           <v-btn fab text small @click="prev">
-            <v-icon small>mdi-chevron-left</v-icon>
+            <v-icon>mdi-chevron-left</v-icon>
           </v-btn>
+          <!-- Текущие год и месяц -->
+          <v-toolbar-title>{{focus.slice(0,7)}}</v-toolbar-title>
+          <!-- Кнопка "Вперед" -->
           <v-btn fab text small @click="next">
-            <v-icon small>mdi-chevron-right</v-icon>
+            <v-icon>mdi-chevron-right</v-icon>
           </v-btn>
-          <v-toolbar-title>{{ title }}</v-toolbar-title>
-          <div class="flex-grow-1"></div>
-          <!-- Кнопка "заполнить график на месяц" -->
-          <v-btn color="success" @click="dialogFillMonth.show=true">
-            <v-icon dark>mdi-plus</v-icon>Заполнить график на месяц
+          <!-- Переключатель формата календаря месяц/неделя-->
+          <v-btn fab text small @click="changeCalendarType">
+            <v-icon>{{typeToLabel[type]}}</v-icon>
           </v-btn>
           <v-spacer></v-spacer>
-          <v-menu bottom right>
-            <template v-slot:activator="{ on }">
-              <v-btn outlined v-on="on">
-                <span>{{ typeToLabel[type] }}</span>
-                <v-icon right>mdi-menu-down</v-icon>
-              </v-btn>
-            </template>
-
-            <v-list>
-              <v-list-item @click="type = 'week'">
-                <v-list-item-title>Неделя</v-list-item-title>
-              </v-list-item>
-              <v-list-item @click="type = 'month'">
-                <v-list-item-title>Месяц</v-list-item-title>
-              </v-list-item>
-            </v-list>
-          </v-menu>
+          <!-- Кнопка "Добавить смену" -->
+          <v-btn fab text small @click="dialogShift.isNew=true,openShiftDialog({})">
+            <v-icon color="green">mdi-plus-one</v-icon>
+          </v-btn>
+          <!-- Кнопка "Заполнить график на месяц" -->
+          <!-- TODO: навесить методы на кнопки, в методы перенести подготовку интерфейса. Конкретно тут заполнить сотрудников 1-4 -->
+          <v-btn fab text small @click="dialogFillMonth.show=true">
+            <v-icon color="green">mdi-playlist-plus</v-icon>
+          </v-btn>
         </v-toolbar>
       </v-sheet>
 
-      <!-- Место для отладки  TODO удалить-->
-      <h3>{{dialogShift}} --- {{focus}}</h3>
+      <!-- Место для отладки  TODO удалить
+      <h3>{{ focus }} --- </h3>-->
 
-      <!-- TODO  сделать календарь с понедельника -->
       <!-- Календарь -->
       <v-sheet>
         <v-calendar
@@ -54,6 +50,7 @@
           :event-color="getEventColor"
           :event-margin-bottom="3"
           :type="type"
+          :weekdays="[1,2,3,4,5,6,0]"
           @click:event="openShiftDialog"
           @click:date="clickDate"
         ></v-calendar>
@@ -66,15 +63,11 @@
         v-model="snackbar.show"
         :color="snackbar.color"
         :timeout="snackbar.timeout"
-      >
-        {{ snackbar.text }}
-        <v-btn fab :color="snackbar.color" @click="snackbar.show = false">
-          <v-icon dark>mdi-close</v-icon>
-        </v-btn>
-      </v-snackbar>
+        @click="snackbar.show = false"
+      >{{ snackbar.text }}</v-snackbar>
 
       <!-- Диалог создания/правки смены -->
-      <v-dialog v-model="this.dialogShift.show" max-width="500px">
+      <v-dialog v-model="dialogShift.show" max-width="500px" @click:outside="closeShiftDialog('')">
         <v-card>
           <v-card-title>
             <span class="headline">{{ formTitle }}</span>
@@ -123,11 +116,11 @@
         </v-card>
       </v-dialog>
 
-      <!-- Диалог заполнения графика на месяц -->
+      <!-- Диалог заполнения графика на месяц-->
       <v-dialog v-model="dialogFillMonth.show" max-width="600px">
         <v-card>
           <v-card-title>
-            <span class="headline">Заполнение графика на месяц</span>
+            <span class="headline">Заполнить график на месяц</span>
           </v-card-title>
           <v-card-text>
             <v-layout row wrap>
@@ -184,9 +177,7 @@
                 return-object
                 single-line
               ></v-select>
-
               <v-spacer></v-spacer>
-
               <v-text-field
                 ref="duration"
                 v-model="dialogFillMonth.duration"
@@ -235,12 +226,12 @@ export default {
       query: ALL_SHIFTS_QUERY,
       variables() {
         return {
-          utPointInMonth: this.calendarFocus 
-        }
-      },
+          utPointInMonth: this.calendarFocus
+        };
+      } /*
       skip() {
         return !this.calendarFocus;
-      }
+      }*/
     },
     Employees: {
       query: ALL_EMPLOYEES_QUERY
@@ -253,7 +244,7 @@ export default {
       dialogFillMonth: {
         show: false,
         employees: [null, null, null, null],
-        startDate: new Date().toISOString().slice(0, 10),
+        startDate: new Date().toISOString().slice(0, 8) + "01",
         startTime: "08:00",
         duration: "12:00",
         //Порядок смен при заполнении месяца
@@ -272,8 +263,8 @@ export default {
       focus: new Date().toISOString(),
       type: "month",
       typeToLabel: {
-        month: "Месяц",
-        week: "Неделя"
+        month: "mdi-view-module",
+        week: "mdi-view-week"
       },
       //Структура для диалога с карточкой смены
       dialogShift: {
@@ -330,31 +321,6 @@ export default {
         }));
       return newShifts;
     },
-    title() {
-      const { start, end } = this;
-      if (!start || !end) {
-        return "";
-      }
-
-      const startMonth = this.monthFormatter(start);
-      const endMonth = this.monthFormatter(end);
-      const suffixMonth = startMonth === endMonth ? "" : endMonth;
-
-      const startYear = start.year;
-      const endYear = end.year;
-      const suffixYear = startYear === endYear ? "" : endYear;
-
-      const startDay = start.day + this.nth(start.day);
-      const endDay = end.day + this.nth(end.day);
-
-      switch (this.type) {
-        case "month":
-          return `${startMonth} ${startYear}`;
-        case "week":
-          return `${startMonth} ${startDay} ${startYear} - ${suffixMonth} ${endDay} ${suffixYear}`;
-      }
-      return "";
-    },
     monthFormatter() {
       return this.$refs.calendar.getFormatter({
         timeZone: "UTC",
@@ -366,6 +332,10 @@ export default {
     this.$refs.calendar.checkChange();
   },
   methods: {
+    changeCalendarType() {
+      if (this.type === "month") this.type = "week";
+      else this.type = "month";
+    },
     clickDate({ date }) {
       this.selectedDay = date.toString();
       this.dialogShift.isNew = true;
@@ -392,7 +362,9 @@ export default {
       }
       //Если смена новая
       else {
-        this.dialogShift.startDate = this.selectedDay;
+        this.dialogShift.startDate = this.selectedDay
+          ? this.selectedDay
+          : this.focus.slice(0, 10);
         this.dialogShift.employee = this.Employees[0]
           ? this.Employees[0]
           : null;
@@ -405,8 +377,6 @@ export default {
     //Обработчик кнопки "Отмена" в карточке смены
     closeShiftDialog(text, color) {
       this.defaultShift();
-      //this.dialogShift.show = false;
-      //this.dialogShift.isNew = false;
       //Показываем всплывашку, если переменная с текстом не пустая
       if (text) {
         this.snackbar.text = text;
@@ -418,8 +388,6 @@ export default {
     saveShift() {
       //Текст всплывашки
       var theText = "";
-      //Заполняем ID сотрудника смены
-      //this.dialogShift.employeeId = this.dialogShift.employee.id;
       //Вычисляем UNIX-time начала смены
       this.dialogShift.utStart =
         new Date(this.dialogShift.startDate).getTime() +
@@ -490,22 +458,20 @@ export default {
       return event.color;
     },
     setToday() {
-      this.focus = this.today;
+      this.focus = new Date().toISOString();
+      this.dialogFillMonth.startDate = this.focus.slice(0, 8) + "01";
     },
     prev() {
       this.$refs.calendar.prev();
-      //Запрашиваем список смен
+      this.dialogFillMonth.startDate = this.focus.slice(0, 8) + "01";
+      //Обновляем список смен
       this.$apollo.queries.Shifts.refetch();
     },
     next() {
       this.$refs.calendar.next();
-      //Запрашиваем список смен
-      this.$apollo.query({
-        query: ALL_SHIFTS_QUERY,
-        variables: {
-          utPointInMonth: new Date(this.focus).getTime().toString()
-        }
-      });
+      this.dialogFillMonth.startDate = this.focus.slice(0, 8) + "01";
+      //Обновляем список смен
+      this.$apollo.queries.Shifts.refetch();
     },
     nth(d) {
       return d > 3 && d < 21
