@@ -1,3 +1,5 @@
+
+<!-- TODO: навесить методы на кнопки, в методы перенести подготовку интерфейса -->
 <template>
   <v-row class="fill-height">
     <v-col>
@@ -28,15 +30,14 @@
             <v-icon color="green">mdi-plus-one</v-icon>
           </v-btn>
           <!-- Кнопка "Заполнить график на месяц" -->
-          <!-- TODO: навесить методы на кнопки, в методы перенести подготовку интерфейса. Конкретно тут заполнить сотрудников 1-4 -->
-          <v-btn fab text small @click="dialogFillMonth.show=true">
+          <v-btn fab text small @click="dialogFillMonthOpen()">
             <v-icon color="green">mdi-playlist-plus</v-icon>
           </v-btn>
         </v-toolbar>
       </v-sheet>
 
       <!-- Место для отладки  TODO удалить
-      <h3>{{ focus }} --- </h3>-->
+      <h3>{{ activeEmployees }} ---</h3>-->
 
       <!-- Календарь -->
       <v-sheet>
@@ -127,7 +128,7 @@
               <v-select
                 max-width="200"
                 v-model="dialogFillMonth.employees[0]"
-                :items="Employees"
+                :items="activeEmployees"
                 hint="Первый сотрудник"
                 item-text="fullName"
                 item-value="id"
@@ -147,7 +148,7 @@
               <v-select
                 max-width="200"
                 v-model="dialogFillMonth.employees[1]"
-                :items="Employees"
+                :items="activeEmployees"
                 hint="Второй сотрудник"
                 item-text="fullName"
                 item-value="id"
@@ -169,7 +170,7 @@
                 xl3
                 md3
                 v-model="dialogFillMonth.employees[2]"
-                :items="Employees"
+                :items="activeEmployees"
                 hint="Третий сотрудник"
                 item-text="fullName"
                 item-value="id"
@@ -188,7 +189,7 @@
             <v-layout row wrap>
               <v-select
                 v-model="dialogFillMonth.employees[3]"
-                :items="Employees"
+                :items="activeEmployees"
                 hint="Четвертый сотрудник"
                 item-text="fullName"
                 item-value="id"
@@ -216,7 +217,8 @@ import {
   ADD_SHIFT_MUTATION,
   UPDATE_SHIFT_MUTATION,
   DELETE_SHIFT_MUTATION,
-  ALL_EMPLOYEES_QUERY
+  ALL_EMPLOYEES_QUERY,
+  ACTIVE_EMPLOYEES_QUERY
 } from "@/queries/queries.js";
 
 export default {
@@ -235,6 +237,9 @@ export default {
     },
     Employees: {
       query: ALL_EMPLOYEES_QUERY
+    },
+    activeEmployees: {
+      query: ACTIVE_EMPLOYEES_QUERY
     }
   },
   //Данные для интерфейса
@@ -423,6 +428,17 @@ export default {
       this.dialogShift.utStart = 0;
       this.dialogShift.utEnd = 0;
       this.dialogShift.utDuration = 0;
+    },
+    //Открываем окно заполнения графика на месяц
+    dialogFillMonthOpen() {
+      //Заполням форму первыми попавшимися сотрудниками
+      for (let i = 0; i < 4; i++) {
+        this.dialogFillMonth.employees[i] = this.activeEmployees[i]
+          ? this.activeEmployees[i]
+          : null;
+      }
+      //Показываем окно
+      this.dialogFillMonth.show = true;
     },
     //Заполнить график до конца месяца
     fillShiftsForMonth() {

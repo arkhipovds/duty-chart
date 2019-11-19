@@ -1,7 +1,8 @@
 <template>
   <v-app>
     <div class="text-xs-center">
-      <v-dialog v-model="dialog" max-width="500px">  <!-- Диалог создания/правки карточки сотрудника -->
+      <!-- Диалог создания/правки карточки сотрудника -->
+      <v-dialog v-model="dialog" max-width="500px">
         <v-card>
           <v-card-title>
             <span class="headline">{{ formTitle }}</span>
@@ -12,6 +13,7 @@
                 <v-flex xs12 sm6 md4>
                   <v-text-field ref="fullName" v-model="editedItem.fullName" label="ФИО"></v-text-field>
                 </v-flex>
+
                 <v-flex xs12 sm6 md4>
                   <v-switch v-model="editedItem.isRegular" label="Штатный"></v-switch>
                 </v-flex>
@@ -24,6 +26,9 @@
                     class="mx-auto"
                   ></v-color-picker>
                 </v-flex>
+                <v-flex xs12 sm6 md4>
+                  <v-text-field ref="ADLogin" v-model="editedItem.ADLogin" label="Логин в домене"></v-text-field>
+                </v-flex>
               </v-layout>
             </v-container>
           </v-card-text>
@@ -35,7 +40,9 @@
         </v-card>
       </v-dialog>
     </div>
+
     <v-card color="grey lighten-4" flat height="200px" tile>
+      <!-- Панель управления таблицей -->
       <v-toolbar>
         <v-text-field
           v-model="searchTerm"
@@ -55,6 +62,7 @@
           <v-icon color="green">mdi-account-plus</v-icon>
         </v-btn>
       </v-toolbar>
+      <!-- Список сотрудников -->
       <v-data-table
         :headers="headers"
         :items="activeEmployees"
@@ -137,6 +145,7 @@ export default {
       editedItem: {
         id: "",
         fullName: "",
+        ADLogin: "",
         isRegular: false,
         visibleColor: ""
       },
@@ -144,6 +153,7 @@ export default {
       defaultItem: {
         id: "",
         fullName: "",
+        ADLogin: "",
         isRegular: false,
         visibleColor: ""
       },
@@ -187,7 +197,7 @@ export default {
   apollo: {
     activeEmployees: {
       query: ACTIVE_EMPLOYEES_QUERY
-    },
+    }
   },
   computed: {
     formTitle() {
@@ -204,7 +214,9 @@ export default {
           this.pagination.rowsPerPage != 0)
       ) {
         // если данные с бэкенда есть, то считаем
-        return Math.ceil(this.activeEmployees.length / this.pagination.rowsPerPage);
+        return Math.ceil(
+          this.activeEmployees.length / this.pagination.rowsPerPage
+        );
       } else return 0; //
     }
   },
@@ -231,6 +243,7 @@ export default {
         mutation: ADD_EMPLOYEE_MUTATION,
         variables: {
           fullName: this.editedItem.fullName,
+          ADLogin: this.editedItem.ADLogin,
           isRegular: this.editedItem.isRegular,
           visibleColor: this.editedItem.visibleColor
         },
@@ -263,6 +276,7 @@ export default {
     selectEmployee(input) {
       this.editedItem.id = input.id;
       this.editedItem.fullName = input.fullName;
+      this.editedItem.ADLogin = input.ADLogin;
       this.editedItem.isRegular = input.isRegular;
       this.editedItem.visibleColor = input.visibleColor;
       this.dialog = true;
@@ -275,6 +289,7 @@ export default {
         variables: {
           id: this.editedItem.id,
           fullName: this.editedItem.fullName,
+          ADLogin: this.editedItem.ADLogin,
           isRegular: this.editedItem.isRegular,
           visibleColor: this.editedItem.visibleColor
         },

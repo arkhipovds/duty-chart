@@ -45,6 +45,7 @@ export const ALL_EMPLOYEES_QUERY = gql`
     Employees {
       id
       fullName
+      ADLogin
       isRegular
       visibleColor
     }
@@ -56,6 +57,7 @@ export const ACTIVE_EMPLOYEES_QUERY = gql`
     activeEmployees {
       id
       fullName
+      ADLogin
       isRegular
       visibleColor
     }
@@ -63,14 +65,16 @@ export const ACTIVE_EMPLOYEES_QUERY = gql`
 `;
 //Запрос на добавление сотрудника
 export const ADD_EMPLOYEE_MUTATION = gql`
-  mutation($fullName: String!, $isRegular: Boolean!, $visibleColor: String!) {
+  mutation($fullName: String!, $ADLogin: String!, $isRegular: Boolean!, $visibleColor: String!) {
     addEmployee(
       fullName: $fullName
+      ADLogin: $ADLogin
       isRegular: $isRegular
       visibleColor: $visibleColor
     ) {
       id
       fullName
+      ADLogin
       isRegular
       visibleColor
     }
@@ -81,17 +85,20 @@ export const UPDATE_EMPLOYEE_MUTATION = gql`
   mutation(
     $id: String!
     $fullName: String!
+    $ADLogin: String!
     $isRegular: Boolean!
     $visibleColor: String!
   ) {
     updateEmployee(
       id: $id
       fullName: $fullName
+      ADLogin: $ADLogin
       isRegular: $isRegular
       visibleColor: $visibleColor
     ) {
       id
       fullName
+      ADLogin
       isRegular
       visibleColor
     }
