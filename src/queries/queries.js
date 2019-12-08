@@ -1,5 +1,23 @@
 import { gql } from "apollo-boost";
 
+//Запрос списка всех событий
+export const ALL_EVENTS_QUERY = gql`
+  query events {
+    events {
+      id
+      tsStart
+      tsAck
+      tsEnd
+      ADlogin
+      text
+      host
+      severity
+      isInTime
+      isForgiven
+    }
+  }
+`;
+//Запрос списка всех смен
 export const ALL_SHIFTS_QUERY = gql`
   query Shifts($utPointInMonth: String!) {
     Shifts(utPointInMonth: $utPointInMonth) {
@@ -65,7 +83,12 @@ export const ACTIVE_EMPLOYEES_QUERY = gql`
 `;
 //Запрос на добавление сотрудника
 export const ADD_EMPLOYEE_MUTATION = gql`
-  mutation($fullName: String!, $ADLogin: String!, $isRegular: Boolean!, $visibleColor: String!) {
+  mutation(
+    $fullName: String!
+    $ADLogin: String!
+    $isRegular: Boolean!
+    $visibleColor: String!
+  ) {
     addEmployee(
       fullName: $fullName
       ADLogin: $ADLogin
@@ -110,14 +133,3 @@ export const DELETE_EMPLOYEE_MUTATION = gql`
     deleteEmployee(id: $id)
   }
 `;
-
-/*
-export const UPDATE_PHONE_MUTATION = gql`
-  mutation($id: ID!, $number: String!, $name: String!) {
-    updatePhoneByID(id: $id, number: $number, name: $name) {
-      ...Phone
-    }
-  }
-  ${fragment}
-`;
-*/

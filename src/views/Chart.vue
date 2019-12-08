@@ -230,10 +230,7 @@ export default {
         return {
           utPointInMonth: this.calendarFocus
         };
-      } /*
-      skip() {
-        return !this.calendarFocus;
-      }*/
+      } 
     },
     Employees: {
       query: ALL_EMPLOYEES_QUERY
