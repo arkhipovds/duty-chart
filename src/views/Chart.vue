@@ -230,7 +230,7 @@ export default {
         return {
           utPointInMonth: this.calendarFocus
         };
-      } 
+      }
     },
     Employees: {
       query: ALL_EMPLOYEES_QUERY
@@ -313,9 +313,20 @@ export default {
           id: n.id,
           start: this.msToDateString(n.start),
           end: this.msToDateString(n.end),
-          name: this.Employees[
-            this.Employees.findIndex(el => el.id === n.employeeId)
-          ].fullName,
+          name:
+            this.Employees[
+              this.Employees.findIndex(el => el.id === n.employeeId)
+            ].fullName +
+            " " +
+            Math.round((n.ackInTimeEventsCount * 100) / n.normalEventsCount) +
+            "/" +
+            Math.round(
+              (n.ackNotInTimeEventsCount * 100) / n.normalEventsCount
+            ) +
+            "/" +
+            Math.round((n.noAckEventsCount * 100) / n.normalEventsCount) +
+            " " +
+            n.normalEventsCount,
           color: this.Employees[
             this.Employees.findIndex(el => el.id === n.employeeId)
           ].visibleColor,

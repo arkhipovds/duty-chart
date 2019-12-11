@@ -12,7 +12,7 @@ export const ALL_EVENTS_QUERY = gql`
       text
       host
       severity
-      isInTime
+      freeDuration
       isForgiven
     }
   }
@@ -25,6 +25,11 @@ export const ALL_SHIFTS_QUERY = gql`
       start
       end
       employeeId
+      ackInTimeEventsCount
+      ackNotInTimeEventsCount
+      noAckEventsCount
+      tooShortEventsCount
+      normalEventsCount
     }
   }
 `;

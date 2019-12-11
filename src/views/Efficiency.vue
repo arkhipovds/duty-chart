@@ -97,7 +97,7 @@ export default {
       { text: "Текст события", value: "text" },
       { text: "Хост", value: "host" },
       { text: "Критичность", value: "severity" },
-      { text: "Подтвердили вовремя", value: "isInTime" },
+      { text: "Время подтверждения", value: "freeDuration" },
       { text: ":)", value: "isForgiven" }
     ],
     desserts: [],
