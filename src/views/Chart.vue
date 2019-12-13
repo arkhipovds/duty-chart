@@ -309,29 +309,46 @@ export default {
       //!!!!!!!!!!!!!!!TODO переписать стрелочную функцию на нормальную, с проверками существования всех объектов и дефолтным поведением
       var newShifts = [];
       if (this.Shifts && this.Employees)
-        newShifts = this.Shifts.map(n => ({
-          id: n.id,
-          start: this.msToDateString(n.start),
-          end: this.msToDateString(n.end),
-          name:
-            this.Employees[
-              this.Employees.findIndex(el => el.id === n.employeeId)
-            ].fullName +
-            " " +
-            Math.round((n.ackInTimeEventsCount * 100) / n.normalEventsCount) +
-            "/" +
-            Math.round(
-              (n.ackNotInTimeEventsCount * 100) / n.normalEventsCount
-            ) +
-            "/" +
-            Math.round((n.noAckEventsCount * 100) / n.normalEventsCount) +
-            " " +
-            n.normalEventsCount,
-          color: this.Employees[
-            this.Employees.findIndex(el => el.id === n.employeeId)
-          ].visibleColor,
-          employeeId: n.employeeId
-        }));
+        newShifts = this.Shifts.map(element => {
+          var shiftIndicator = "";
+          if (
+            element.normalEventsCount > 0 ||
+            element.tooShortEventsCount > 0
+          ) {
+            var shiftIndicator =
+              " " +
+              Math.round(
+                (element.ackInTimeEventsCount * 100) / element.normalEventsCount
+              ) +
+              "/" +
+              Math.round(
+                (element.ackNotInTimeEventsCount * 100) /
+                  element.normalEventsCount
+              ) +
+              "/" +
+              Math.round(
+                (element.noAckEventsCount * 100) / element.normalEventsCount
+              ) +
+              " " +
+              element.normalEventsCount +
+              " " +
+              element.tooShortEventsCount;
+          }
+          var newElement = {
+            id: element.id,
+            start: this.msToDateString(element.start),
+            end: this.msToDateString(element.end),
+            name:
+              this.Employees[
+                this.Employees.findIndex(el => el.id === element.employeeId)
+              ].fullName + shiftIndicator,
+            color: this.Employees[
+              this.Employees.findIndex(el => el.id === element.employeeId)
+            ].visibleColor,
+            employeeId: element.employeeId
+          };
+          return newElement;
+        });
       return newShifts;
     },
     monthFormatter() {
