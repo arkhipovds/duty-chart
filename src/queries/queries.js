@@ -2,8 +2,8 @@ import { gql } from "apollo-boost";
 
 //Запрос списка всех событий
 export const ALL_EVENTS_QUERY = gql`
-  query events {
-    events {
+  query events($TS: String!, $employeeId: String!) {
+    events(TS: $TS, employeeId: $employeeId) {
       id
       tsStart
       tsAck
@@ -17,10 +17,16 @@ export const ALL_EVENTS_QUERY = gql`
     }
   }
 `;
+//Запрос на расчет показателей за месяц
+export const CALCULATE_SCORINGS = gql`
+  mutation($TS: String!) {
+    calculateScorings(TS: $TS)
+  }
+`;
 //Запрос списка всех смен
 export const ALL_SHIFTS_QUERY = gql`
-  query Shifts($utPointInMonth: String!) {
-    Shifts(utPointInMonth: $utPointInMonth) {
+  query Shifts($TS: String!) {
+    Shifts(TS: $TS) {
       id
       start
       end
@@ -136,5 +142,19 @@ export const UPDATE_EMPLOYEE_MUTATION = gql`
 export const DELETE_EMPLOYEE_MUTATION = gql`
   mutation($id: String) {
     deleteEmployee(id: $id)
+  }
+`;
+//Запрос оценок
+export const ALL_SCORINGS_QUERY = gql`
+  query scorings($TS: String!) {
+    scorings(TS: $TS) {
+      id
+      employeeId
+      ackInTimeEventsCount
+      ackNotInTimeEventsCount
+      noAckEventsCount
+      tooShortEventsCount
+      normalEventsCount
+    }
   }
 `;

@@ -36,7 +36,7 @@
         </v-toolbar>
       </v-sheet>
 
-      <!-- Место для отладки  TODO удалить
+      <!-- Место для отладки  TODO удалить :event-color="getEventColor"
       <h3>{{ activeEmployees }} ---</h3>-->
 
       <!-- Календарь -->
@@ -50,11 +50,26 @@
           :events="shifts"
           :event-color="getEventColor"
           :event-margin-bottom="3"
+          :event-more="false"
           :type="type"
           :weekdays="[1,2,3,4,5,6,0]"
           @click:event="openShiftDialog"
           @click:date="clickDate"
-        ></v-calendar>
+        >
+          <!--
+          <template v-slot:day="day">
+            day slot {{ day.date }}
+            <v-chip pill>
+              <v-avatar left color="red">P</v-avatar>Pill
+            </v-chip>
+            <v-chip pill>
+              <v-avatar left color="red">P</v-avatar>Pill
+            </v-chip>
+            <v-chip pill>
+              <v-avatar left color="red">P</v-avatar>Pill
+            </v-chip>
+          </template>-->
+        </v-calendar>
       </v-sheet>
 
       <!-- Всплывашка после действий -->
@@ -228,7 +243,7 @@ export default {
       query: ALL_SHIFTS_QUERY,
       variables() {
         return {
-          utPointInMonth: this.calendarFocus
+          TS: this.calendarFocus
         };
       }
     },
@@ -315,24 +330,14 @@ export default {
             element.normalEventsCount > 0 ||
             element.tooShortEventsCount > 0
           ) {
-            var shiftIndicator =
+            shiftIndicator =
               " " +
               Math.round(
                 (element.ackInTimeEventsCount * 100) / element.normalEventsCount
               ) +
-              "/" +
-              Math.round(
-                (element.ackNotInTimeEventsCount * 100) /
-                  element.normalEventsCount
-              ) +
-              "/" +
-              Math.round(
-                (element.noAckEventsCount * 100) / element.normalEventsCount
-              ) +
-              " " +
+              "% от " +
               element.normalEventsCount +
-              " " +
-              element.tooShortEventsCount;
+              " шт";
           }
           var newElement = {
             id: element.id,
@@ -341,7 +346,8 @@ export default {
             name:
               this.Employees[
                 this.Employees.findIndex(el => el.id === element.employeeId)
-              ].fullName + shiftIndicator,
+              ].fullName +
+              shiftIndicator,
             color: this.Employees[
               this.Employees.findIndex(el => el.id === element.employeeId)
             ].visibleColor,
@@ -533,7 +539,7 @@ export default {
           {
             query: ALL_SHIFTS_QUERY,
             variables: {
-              utPointInMonth: new Date(this.focus).getTime().toString()
+              TS: new Date(this.focus).getTime().toString()
             }
           }
         ]
@@ -553,7 +559,7 @@ export default {
           {
             query: ALL_SHIFTS_QUERY,
             variables: {
-              utPointInMonth: new Date(this.focus).getTime().toString()
+              TS: new Date(this.focus).getTime().toString()
             }
           }
         ]
@@ -571,7 +577,7 @@ export default {
             {
               query: ALL_SHIFTS_QUERY,
               variables: {
-                utPointInMonth: new Date(this.focus).getTime().toString()
+                TS: new Date(this.focus).getTime().toString()
               }
             }
           ]
