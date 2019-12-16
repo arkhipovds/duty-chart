@@ -155,6 +155,7 @@ export const ALL_SCORINGS_QUERY = gql`
       noAckEventsCount
       tooShortEventsCount
       normalEventsCount
+      freeDurationSum
     }
   }
 `;

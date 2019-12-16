@@ -40,29 +40,27 @@
       no-data-text="Нет данных"
     >
       <template v-slot:item.employeeId="{ item }">{{nameOfEmployee(item.employeeId)}}</template>
+      <template v-slot:item.freeDurationSum="{ item }">
+        {{Math.round(
+        item.freeDurationSum / (item.normalEventsCount*60000)
+        )}}
+      </template>
       <template v-slot:item.ackInTimeEventsCount="{ item }">
         <b>
           {{Math.round(
           (item.ackInTimeEventsCount * 100) / item.normalEventsCount
           )}}%
         </b>
-        {{item.ackInTimeEventsCount}}
       </template>
       <template v-slot:item.ackNotInTimeEventsCount="{ item }">
-        <b>
-          {{Math.round(
-          (item.ackNotInTimeEventsCount * 100) / item.normalEventsCount
-          )}}%
-        </b>
-        {{item.ackNotInTimeEventsCount}}
+        {{Math.round(
+        (item.ackNotInTimeEventsCount * 100) / item.normalEventsCount
+        )}}%
       </template>
       <template v-slot:item.noAckEventsCount="{ item }">
-        <b>
-          {{Math.round(
-          (item.noAckEventsCount * 100) / item.normalEventsCount
-          )}}%
-        </b>
-        {{item.noAckEventsCount}}
+        {{Math.round(
+        (item.noAckEventsCount * 100) / item.normalEventsCount
+        )}}%
       </template>
     </v-data-table>
 
@@ -76,6 +74,10 @@
       loading-text="Загружаем данные"
     >
       <template v-slot:no-data></template>
+      <template v-slot:item.tsStart="{ item }">{{msToDateString(item.tsStart)}}</template>
+      <template v-slot:item.tsAck="{ item }">{{msToDateString(item.tsAck)}}</template>
+      <template v-slot:item.tsEnd="{ item }">{{msToDateString(item.tsEnd)}}</template>
+      <template v-slot:item.freeDuration="{ item }">{{Math.round(item.freeDuration/60000)}}</template>
     </v-data-table>
   </div>
 </template>
@@ -119,6 +121,7 @@ export default {
     selected: { item: [], showDetails: false },
     scoringHeaders: [
       { text: "Сотрудник", value: "employeeId", align: "left" },
+      { text: "Время реакции, мин", value: "freeDurationSum", align: "right" },
       {
         text: "Подтвердил вовремя",
         value: "ackInTimeEventsCount",
@@ -131,7 +134,11 @@ export default {
       },
       { text: "Не подтвердил", value: "noAckEventsCount", align: "right" },
       { text: "Всего событий", value: "normalEventsCount", align: "right" },
-      { text: "Коротких событий", value: "tooShortEventsCount", align: "right" }
+      {
+        text: "Слишком коротких событий",
+        value: "tooShortEventsCount",
+        align: "right"
+      }
     ],
     headers: [
       {
@@ -143,10 +150,10 @@ export default {
       { text: "Время подтверждения", value: "tsAck" },
       { text: "Время окончания", value: "tsEnd" },
       { text: "Сотрудник", value: "ADlogin" },
-      { text: "Текст события", value: "text" },
+      { text: "Описание события", value: "text" },
       { text: "Хост", value: "host" },
       { text: "Критичность", value: "severity" },
-      { text: "Время подтверждения", value: "freeDuration" },
+      { text: "Время подтверждения, мин", value: "freeDuration" },
       { text: ":)", value: "isForgiven" }
     ]
   }),
@@ -205,6 +212,17 @@ export default {
       } else {
         return 0;
       }
+    },
+    //Преобразовывает UNIX-time (в мс) в строку в формате "YYYY-MM-DD HH:MM"
+    msToDateString(ms) {
+      if (ms > 0) {
+        const tempDate = new Date(Number.parseInt(ms));
+        const tempString =
+          tempDate.toISOString().slice(0, 10) +
+          " " +
+          tempDate.toISOString().slice(11, 16);
+        return tempString;
+      } else return "-";
     }
   }
 };
