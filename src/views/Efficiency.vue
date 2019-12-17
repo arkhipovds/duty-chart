@@ -149,7 +149,7 @@ export default {
       },
       { text: "Время подтверждения", value: "tsAck" },
       { text: "Время окончания", value: "tsEnd" },
-      { text: "Сотрудник", value: "ADlogin" },
+      { text: "Сотрудник", value: "ADLogin" },
       { text: "Описание события", value: "text" },
       { text: "Хост", value: "host" },
       { text: "Критичность", value: "severity" },

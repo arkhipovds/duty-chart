@@ -8,7 +8,7 @@ export const ALL_EVENTS_QUERY = gql`
       tsStart
       tsAck
       tsEnd
-      ADlogin
+      ADLogin
       text
       host
       severity
