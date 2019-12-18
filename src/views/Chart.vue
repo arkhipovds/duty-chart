@@ -1,229 +1,291 @@
 
 <!-- TODO: навесить методы на кнопки, в методы перенести подготовку интерфейса -->
 <template>
-  <v-row class="fill-height">
-    <v-col>
-      <!-- Панель навигации по календарю -->
-      <v-sheet height="64">
-        <v-toolbar flat color="white">
-          <!-- Кнопка "Сегодня" -->
-          <v-btn fab text small @click="setToday">
-            <v-icon>mdi-calendar-today</v-icon>
-          </v-btn>
-          <!-- Кнопка "Назад" -->
-          <v-btn fab text small @click="prev">
-            <v-icon>mdi-chevron-left</v-icon>
-          </v-btn>
-          <!-- Текущие год и месяц -->
-          <v-toolbar-title>{{focus.slice(0,7)}}</v-toolbar-title>
-          <!-- Кнопка "Вперед" -->
-          <v-btn fab text small @click="next">
-            <v-icon>mdi-chevron-right</v-icon>
-          </v-btn>
-          <!-- Переключатель формата календаря месяц/неделя-->
-          <v-btn fab text small @click="changeCalendarType">
-            <v-icon>{{typeToLabel[type]}}</v-icon>
-          </v-btn>
+  <div>
+    <!-- Панель навигации по календарю -->
+    <v-toolbar>
+      <!-- Кнопка "Сегодня" -->
+      <v-btn fab text small @click="setToday">
+        <v-icon>mdi-calendar-today</v-icon>
+      </v-btn>
+      <!-- Кнопка "Назад" -->
+      <v-btn fab text small @click="prev">
+        <v-icon>mdi-chevron-left</v-icon>
+      </v-btn>
+      <!-- Текущие год и месяц -->
+      <v-toolbar-title>{{focus.slice(0,7)}}</v-toolbar-title>
+      <!-- Кнопка "Вперед" -->
+      <v-btn fab text small @click="next">
+        <v-icon>mdi-chevron-right</v-icon>
+      </v-btn>
+      <!-- Переключатель формата календаря месяц/неделя-->
+      <v-btn fab text small @click="changeCalendarType">
+        <v-icon>{{typeToLabel[type]}}</v-icon>
+      </v-btn>
+      <v-spacer></v-spacer>
+      <!-- Кнопка "Добавить смену" -->
+      <v-btn fab text small @click="dialogShift.isNew=true,openShiftDialog({})">
+        <v-icon color="green">mdi-plus-one</v-icon>
+      </v-btn>
+      <!-- Кнопка "Заполнить график на месяц" -->
+      <v-btn fab text small @click="dialogFillMonthOpen()">
+        <v-icon color="green">mdi-playlist-plus</v-icon>
+      </v-btn>
+    </v-toolbar>
+    <!-- Место для отладки  TODO удалить :event-color="getEventColor"
+    <h3>{{ dialogShift.panel }} ---</h3>-->
+
+    <!-- Календарь -->
+    <v-container fluid>
+      <v-calendar
+        ref="calendar"
+        v-model="focus"
+        color="primary"
+        locale="ru"
+        interval-height="25"
+        :events="shifts"
+        :event-color="getEventColor"
+        :event-margin-bottom="3"
+        :event-more="false"
+        :type="type"
+        :weekdays="[1,2,3,4,5,6,0]"
+        @click:event="openShiftDialog"
+        @click:date="clickDate"
+      ></v-calendar>
+    </v-container>
+
+    <!-- Всплывашка после действий -->
+    <v-snackbar
+      bottom
+      right
+      v-model="snackbar.show"
+      :color="snackbar.color"
+      :timeout="snackbar.timeout"
+      @click="snackbar.show = false"
+    >{{ snackbar.text }}</v-snackbar>
+
+    <!-- Диалог создания/правки смены -->
+    <v-dialog v-model="dialogShift.show" max-width="600px" @click:outside="closeShiftDialog('')">
+      <v-card>
+        <v-card-title>
+          <span class="headline">{{ formTitle }}</span>
           <v-spacer></v-spacer>
-          <!-- Кнопка "Добавить смену" -->
-          <v-btn fab text small @click="dialogShift.isNew=true,openShiftDialog({})">
-            <v-icon color="green">mdi-plus-one</v-icon>
-          </v-btn>
-          <!-- Кнопка "Заполнить график на месяц" -->
-          <v-btn fab text small @click="dialogFillMonthOpen()">
-            <v-icon color="green">mdi-playlist-plus</v-icon>
-          </v-btn>
-        </v-toolbar>
-      </v-sheet>
+          <v-icon v-if="this.dialogShift.id" @click="deleteShiftInDB">mdi-delete</v-icon>
+        </v-card-title>
+        <v-card-text>
+          <v-expansion-panels v-model="dialogShift.panel" multiple>
+            <v-expansion-panel>
+              <v-expansion-panel-header>Настройки</v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <v-row>
+                  <v-col cols="12">
+                    <v-select
+                      v-model="dialogShift.employee"
+                      :items="Employees"
+                      item-text="fullName"
+                      item-value="id"
+                      return-object
+                      label="Сотрудник"
+                    ></v-select>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col cols="4">
+                    <v-text-field
+                      ref="startDate"
+                      v-model="dialogShift.startDate"
+                      label="Дата"
+                      type="date"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="4">
+                    <v-text-field
+                      ref="startTime"
+                      v-model="dialogShift.startTime"
+                      label="Время начала"
+                      type="time"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="4">
+                    <v-text-field
+                      ref="duration"
+                      v-model="dialogShift.duration"
+                      label="Длительность"
+                      type="time"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
 
-      <!-- Место для отладки  TODO удалить :event-color="getEventColor"
-      <h3>{{ activeEmployees }} ---</h3>-->
+            <v-expansion-panel :disabled="!dialogShift.showStats">
+              <v-expansion-panel-header>
+                <div v-if="dialogShift.showStats">Статистика – самая точная из всех лженаук!</div>
+                <div
+                  v-if="!dialogShift.showStats"
+                >Судя по данным статистики, со статистикой у нас будет все в порядке...скоро :)</div>
+              </v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <v-row>
+                  <v-col cols="4">
+                    <v-text-field
+                      ref="ackInTimeEventsCount"
+                      v-model="dialogShift.ackInTimeEventsCount"
+                      label="Подтвердил вовремя"
+                      type="text"
+                      disabled
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="4">
+                    <v-text-field
+                      ref="ackNotInTimeEventsCount"
+                      v-model="dialogShift.ackNotInTimeEventsCount"
+                      label="Подтвердил поздно"
+                      type="text"
+                      disabled
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="4">
+                    <v-text-field
+                      ref="noAckEventsCount"
+                      v-model="dialogShift.noAckEventsCount"
+                      label="Не подтвердил"
+                      type="text"
+                      disabled
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col cols="4">
+                    <v-text-field
+                      ref="normalEventsCount"
+                      v-model="dialogShift.normalEventsCount"
+                      label="Всего нормальных событий"
+                      type="text"
+                      disabled
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="4">
+                    <v-text-field
+                      ref="tooShortEventsCount"
+                      v-model="dialogShift.tooShortEventsCount"
+                      label="Слишком коротких событий"
+                      type="text"
+                      disabled
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="4">
+                    <v-text-field
+                      ref="freeDurationSum"
+                      v-model="dialogShift.freeDurationSum"
+                      label="Среднее время реакции"
+                      type="text"
+                      disabled
+                      dense
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+          </v-expansion-panels>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="red" text @click="closeShiftDialog('')">Отмена</v-btn>
+          <v-btn color="green" text @click="saveShift">Сохранить</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
-      <!-- Календарь -->
-      <v-sheet>
-        <v-calendar
-          ref="calendar"
-          v-model="focus"
-          color="primary"
-          locale="ru"
-          interval-height="25"
-          :events="shifts"
-          :event-color="getEventColor"
-          :event-margin-bottom="3"
-          :event-more="false"
-          :type="type"
-          :weekdays="[1,2,3,4,5,6,0]"
-          @click:event="openShiftDialog"
-          @click:date="clickDate"
-        >
-          <!--
-          <template v-slot:day="day">
-            day slot {{ day.date }}
-            <v-chip pill>
-              <v-avatar left color="red">P</v-avatar>Pill
-            </v-chip>
-            <v-chip pill>
-              <v-avatar left color="red">P</v-avatar>Pill
-            </v-chip>
-            <v-chip pill>
-              <v-avatar left color="red">P</v-avatar>Pill
-            </v-chip>
-          </template>-->
-        </v-calendar>
-      </v-sheet>
-
-      <!-- Всплывашка после действий -->
-      <v-snackbar
-        bottom
-        right
-        v-model="snackbar.show"
-        :color="snackbar.color"
-        :timeout="snackbar.timeout"
-        @click="snackbar.show = false"
-      >{{ snackbar.text }}</v-snackbar>
-
-      <!-- Диалог создания/правки смены -->
-      <v-dialog v-model="dialogShift.show" max-width="500px" @click:outside="closeShiftDialog('')">
-        <v-card>
-          <v-card-title>
-            <span class="headline">{{ formTitle }}</span>
-            <v-spacer></v-spacer>
-            <v-icon v-if="this.dialogShift.id" @click="deleteShiftInDB">mdi-delete</v-icon>
-          </v-card-title>
-          <v-card-text>
-            <v-container grid-list-md>
-              <v-layout wrap>
-                <v-flex xs12 sm6 md4>
-                  <v-select
-                    v-model="dialogShift.employee"
-                    :items="Employees"
-                    item-text="fullName"
-                    item-value="id"
-                    return-object
-                    single-line
-                  ></v-select>
-                  <v-text-field
-                    ref="startDate"
-                    v-model="dialogShift.startDate"
-                    label="Дата"
-                    type="date"
-                  ></v-text-field>
-                  <v-text-field
-                    ref="startTime"
-                    v-model="dialogShift.startTime"
-                    label="Время"
-                    type="time"
-                  ></v-text-field>
-                  <v-text-field
-                    ref="duration"
-                    v-model="dialogShift.duration"
-                    label="Длительность"
-                    type="time"
-                  ></v-text-field>
-                </v-flex>
-              </v-layout>
-            </v-container>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn color="red" text @click="closeShiftDialog('')">Отмена</v-btn>
-            <v-btn color="green" text @click="saveShift">Сохранить</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-
-      <!-- Диалог заполнения графика на месяц-->
-      <v-dialog v-model="dialogFillMonth.show" max-width="600px">
-        <v-card>
-          <v-card-title>
-            <span class="headline">Заполнить график на месяц</span>
-          </v-card-title>
-          <v-card-text>
-            <v-layout row wrap>
+    <!-- Диалог заполнения графика на месяц-->
+    <v-dialog v-model="dialogFillMonth.show" max-width="800px">
+      <v-card>
+        <v-card-title>
+          <span class="headline">Заполнить график на месяц</span>
+        </v-card-title>
+        <v-card-text>
+          <v-row>
+            <v-col cols="3">
               <v-select
-                max-width="200"
                 v-model="dialogFillMonth.employees[0]"
                 :items="activeEmployees"
-                hint="Первый сотрудник"
+                label="Первый сотрудник"
                 item-text="fullName"
                 item-value="id"
-                persistent-hint
                 return-object
-                single-line
               ></v-select>
-              <v-spacer></v-spacer>
+            </v-col>
+            <v-col cols="3">
+              <v-select
+                v-model="dialogFillMonth.employees[1]"
+                :items="activeEmployees"
+                label="Второй сотрудник"
+                item-text="fullName"
+                item-value="id"
+                return-object
+              ></v-select>
+            </v-col>
+            <v-col cols="3">
+              <v-select
+                v-model="dialogFillMonth.employees[2]"
+                :items="activeEmployees"
+                label="Третий сотрудник"
+                item-text="fullName"
+                item-value="id"
+                return-object
+              ></v-select>
+            </v-col>
+            <v-col cols="3">
+              <v-select
+                v-model="dialogFillMonth.employees[3]"
+                :items="activeEmployees"
+                label="Четвертый сотрудник"
+                item-text="fullName"
+                item-value="id"
+                return-object
+              ></v-select>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="3">
               <v-text-field
                 ref="startDate"
                 v-model="dialogFillMonth.startDate"
-                label="Дата"
+                label="Первая смена"
                 type="date"
               ></v-text-field>
-            </v-layout>
-            <v-layout row wrap>
-              <v-select
-                max-width="200"
-                v-model="dialogFillMonth.employees[1]"
-                :items="activeEmployees"
-                hint="Второй сотрудник"
-                item-text="fullName"
-                item-value="id"
-                persistent-hint
-                return-object
-                single-line
-              ></v-select>
-              <v-spacer></v-spacer>
+            </v-col>
+            <v-col cols="3">
               <v-text-field
                 ref="startTime"
                 v-model="dialogFillMonth.startTime"
-                label="Время"
+                label="Начало смены"
                 type="time"
               ></v-text-field>
-            </v-layout>
-            <v-layout row wrap>
-              <v-select
-                lg3
-                xl3
-                md3
-                v-model="dialogFillMonth.employees[2]"
-                :items="activeEmployees"
-                hint="Третий сотрудник"
-                item-text="fullName"
-                item-value="id"
-                persistent-hint
-                return-object
-                single-line
-              ></v-select>
-              <v-spacer></v-spacer>
+            </v-col>
+            <v-col cols="3">
               <v-text-field
                 ref="duration"
                 v-model="dialogFillMonth.duration"
                 label="Длительность"
                 type="time"
               ></v-text-field>
-            </v-layout>
-            <v-layout row wrap>
-              <v-select
-                v-model="dialogFillMonth.employees[3]"
-                :items="activeEmployees"
-                hint="Четвертый сотрудник"
-                item-text="fullName"
-                item-value="id"
-                persistent-hint
-                return-object
-                single-line
-              ></v-select>
-              <v-spacer></v-spacer>
-            </v-layout>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn color="red" text @click="dialogFillMonth.show=false">Отмена</v-btn>
-            <v-btn color="green" text @click="fillShiftsForMonth">Заполнить</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-    </v-col>
-  </v-row>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="red" text @click="dialogFillMonth.show=false">Отмена</v-btn>
+          <v-btn color="green" text @click="fillShiftsForMonth">Заполнить</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </div>
 </template>
 
 <script>
@@ -304,7 +366,15 @@ export default {
         //Конец смены в UNIX-time формате
         utEnd: 0,
         //Длительность смены в UNIX-time формате
-        utDuration: 0
+        utDuration: 0,
+        ackInTimeEventsCount: 0,
+        ackNotInTimeEventsCount: 0,
+        noAckEventsCount: 0,
+        tooShortEventsCount: 0,
+        normalEventsCount: 0,
+        freeDurationSum: 0,
+        panel: [0],
+        showStats: false
       }
     };
   },
@@ -317,7 +387,7 @@ export default {
     },
     //Формируем заголовок карточки смены
     formTitle() {
-      return this.dialogShift.isNew ? "Добавить смену" : "Исправить смену";
+      return this.dialogShift.isNew ? "Новая смена" : "Cмена";
     },
     //Преобразовываем массив со сменами в формат, подходящий для календаря
     shifts() {
@@ -346,12 +416,17 @@ export default {
             name:
               this.Employees[
                 this.Employees.findIndex(el => el.id === element.employeeId)
-              ].fullName +
-              shiftIndicator,
+              ].fullName + shiftIndicator,
             color: this.Employees[
               this.Employees.findIndex(el => el.id === element.employeeId)
             ].visibleColor,
-            employeeId: element.employeeId
+            employeeId: element.employeeId,
+            ackInTimeEventsCount: element.ackInTimeEventsCount,
+            ackNotInTimeEventsCount: element.ackNotInTimeEventsCount,
+            noAckEventsCount: element.noAckEventsCount,
+            tooShortEventsCount: element.tooShortEventsCount,
+            normalEventsCount: element.normalEventsCount,
+            freeDurationSum: element.freeDurationSum
           };
           return newElement;
         });
@@ -395,6 +470,20 @@ export default {
         this.dialogShift.duration = new Date(theDiff)
           .toISOString()
           .slice(11, 16);
+        this.dialogShift.ackInTimeEventsCount = event.ackInTimeEventsCount;
+        this.dialogShift.ackNotInTimeEventsCount =
+          event.ackNotInTimeEventsCount;
+        this.dialogShift.noAckEventsCount = event.noAckEventsCount;
+        this.dialogShift.tooShortEventsCount = event.tooShortEventsCount;
+        this.dialogShift.normalEventsCount = event.normalEventsCount;
+        if (event.normalEventsCount > 0) {
+          this.dialogShift.freeDurationSum = Math.round(
+            event.freeDurationSum / event.normalEventsCount / 60000
+          );
+          this.dialogShift.showStats = true;
+        } else {
+          this.dialogShift.freeDurationSum = 0;
+        }
       }
       //Если смена новая
       else {
@@ -459,6 +548,14 @@ export default {
       this.dialogShift.utStart = 0;
       this.dialogShift.utEnd = 0;
       this.dialogShift.utDuration = 0;
+      this.dialogShift.ackInTimeEventsCount = 0;
+      this.dialogShift.ackNotInTimeEventsCount = 0;
+      this.dialogShift.noAckEventsCount = 0;
+      this.dialogShift.tooShortEventsCount = 0;
+      this.dialogShift.normalEventsCount = 0;
+      this.dialogShift.freeDurationSum = 0;
+      this.dialogShift.panel = [0];
+      this.dialogShift.showStats = false;
     },
     //Открываем окно заполнения графика на месяц
     dialogFillMonthOpen() {

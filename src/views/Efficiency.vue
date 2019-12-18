@@ -1,84 +1,88 @@
 <template>
   <div>
     <!-- Панель навигации по календарю -->
-    <v-sheet height="64">
-      <v-toolbar flat color="white">
-        <!-- Кнопка "Сегодня" -->
-        <v-btn fab text small @click="setToday">
-          <v-icon>mdi-calendar-today</v-icon>
-        </v-btn>
-        <!-- Кнопка "Назад" -->
-        <v-btn fab text small @click="prev">
-          <v-icon>mdi-chevron-left</v-icon>
-        </v-btn>
-        <!-- Текущие год и месяц -->
-        <v-toolbar-title>{{focus.toISOString().slice(0,7)}}</v-toolbar-title>
-        <!--Кнопка "Вперед" -->
-        <v-btn fab text small @click="next">
-          <v-icon>mdi-chevron-right</v-icon>
-        </v-btn>
-        <!--<h3>{{this.selected}}</h3>-->
-        <v-spacer></v-spacer>
-        <!-- Кнопка "Вперед" -->
-        <v-btn fab text small @click="calculateScorings">
-          <v-icon>mdi-refresh</v-icon>
-        </v-btn>
-      </v-toolbar>
-    </v-sheet>
 
-    <v-subheader>Показатели сотрудников</v-subheader>
+    <v-toolbar>
+      <!-- Кнопка "Сегодня" -->
+      <v-btn fab text small @click="setToday">
+        <v-icon>mdi-calendar-today</v-icon>
+      </v-btn>
+      <!-- Кнопка "Назад" -->
+      <v-btn fab text small @click="prev">
+        <v-icon>mdi-chevron-left</v-icon>
+      </v-btn>
+      <!-- Текущие год и месяц -->
+      <v-toolbar-title>{{focus.toISOString().slice(0,7)}}</v-toolbar-title>
+      <!--Кнопка "Вперед" -->
+      <v-btn fab text small @click="next">
+        <v-icon>mdi-chevron-right</v-icon>
+      </v-btn>
+      <!--<h3>{{this.selected}}</h3>-->
+      <v-spacer></v-spacer>
+      <!-- Кнопка "Вперед" -->
+      <v-btn fab text small @click="calculateScorings">
+        <v-icon>mdi-refresh</v-icon>
+      </v-btn>
+    </v-toolbar>
+
     <!-- Таблица с показателями сотрудников -->
-    <v-data-table
-      v-model="selected.item"
-      :headers="scoringHeaders"
-      :items="scorings"
-      item-key="id"
-      :single-select="true"
-      show-select
-      @item-selected="showDetails"
-      hide-default-footer
-      no-data-text="Нет данных"
-    >
-      <template v-slot:item.employeeId="{ item }">{{nameOfEmployee(item.employeeId)}}</template>
-      <template v-slot:item.freeDurationSum="{ item }">
-        {{Math.round(
-        item.freeDurationSum / (item.normalEventsCount*60000)
-        )}}
-      </template>
-      <template v-slot:item.ackInTimeEventsCount="{ item }">
-        <b>
+    <v-container fluid>
+      <v-data-table
+        v-model="selected.item"
+        :headers="scoringHeaders"
+        :items="scorings"
+        item-key="id"
+        :single-select="true"
+        show-select
+        @item-selected="showDetails"
+        hide-default-footer
+        no-data-text="Нет данных"
+      >
+        <template v-slot:item.employeeId="{ item }">{{nameOfEmployee(item.employeeId)}}</template>
+        <template v-slot:item.freeDurationSum="{ item }">
           {{Math.round(
-          (item.ackInTimeEventsCount * 100) / item.normalEventsCount
+          item.freeDurationSum / (item.normalEventsCount*60000)
+          )}}
+        </template>
+        <template v-slot:item.ackInTimeEventsCount="{ item }">
+          <b>
+            {{Math.round(
+            (item.ackInTimeEventsCount * 100) / item.normalEventsCount
+            )}}%
+          </b>
+        </template>
+        <template v-slot:item.ackNotInTimeEventsCount="{ item }">
+          {{Math.round(
+          (item.ackNotInTimeEventsCount * 100) / item.normalEventsCount
           )}}%
-        </b>
-      </template>
-      <template v-slot:item.ackNotInTimeEventsCount="{ item }">
-        {{Math.round(
-        (item.ackNotInTimeEventsCount * 100) / item.normalEventsCount
-        )}}%
-      </template>
-      <template v-slot:item.noAckEventsCount="{ item }">
-        {{Math.round(
-        (item.noAckEventsCount * 100) / item.normalEventsCount
-        )}}%
-      </template>
-    </v-data-table>
+        </template>
+        <template v-slot:item.noAckEventsCount="{ item }">
+          {{Math.round(
+          (item.noAckEventsCount * 100) / item.normalEventsCount
+          )}}%
+        </template>
+      </v-data-table>
+    </v-container>
 
-    <v-subheader v-show="selected.showDetails">События по выбранному сотруднику - {{eventsCount()}}</v-subheader>
-    <!-- Таблица с событиями -->
-    <v-data-table
-      v-show="selected.showDetails"
-      :headers="headers"
-      :items="events"
-      no-data-text="Нет данных"
-      loading-text="Загружаем данные"
-    >
-      <template v-slot:no-data></template>
-      <template v-slot:item.tsStart="{ item }">{{msToDateString(item.tsStart)}}</template>
-      <template v-slot:item.tsAck="{ item }">{{msToDateString(item.tsAck)}}</template>
-      <template v-slot:item.tsEnd="{ item }">{{msToDateString(item.tsEnd)}}</template>
-      <template v-slot:item.freeDuration="{ item }">{{Math.round(item.freeDuration/60000)}}</template>
-    </v-data-table>
+    <v-container fluid>
+      <v-subheader
+        v-show="selected.showDetails"
+      >События по выбранному сотруднику - {{eventsCount()}}</v-subheader>
+      <!-- Таблица с событиями -->
+      <v-data-table
+        v-show="selected.showDetails"
+        :headers="headers"
+        :items="events"
+        no-data-text="Нет данных"
+        loading-text="Загружаем данные"
+      >
+        <template v-slot:no-data></template>
+        <template v-slot:item.tsStart="{ item }">{{msToDateString(item.tsStart)}}</template>
+        <template v-slot:item.tsAck="{ item }">{{msToDateString(item.tsAck)}}</template>
+        <template v-slot:item.tsEnd="{ item }">{{msToDateString(item.tsEnd)}}</template>
+        <template v-slot:item.freeDuration="{ item }">{{Math.round(item.freeDuration/60000)}}</template>
+      </v-data-table>
+    </v-container>
   </div>
 </template>
 

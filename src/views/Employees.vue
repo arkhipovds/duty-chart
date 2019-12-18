@@ -1,68 +1,25 @@
 <template>
   <v-app>
-    <div class="text-xs-center">
-      <!-- Диалог создания/правки карточки сотрудника -->
-      <v-dialog v-model="dialog" max-width="500px">
-        <v-card>
-          <v-card-title>
-            <span class="headline">{{ formTitle }}</span>
-          </v-card-title>
-          <v-card-text>
-            <v-container grid-list-md>
-              <v-layout wrap>
-                <v-flex xs12 sm6 md4>
-                  <v-text-field ref="fullName" v-model="editedItem.fullName" label="ФИО"></v-text-field>
-                </v-flex>
-
-                <v-flex xs12 sm6 md4>
-                  <v-switch v-model="editedItem.isRegular" label="Штатный"></v-switch>
-                </v-flex>
-                <v-flex xs12 sm6 md4>
-                  <v-color-picker
-                    v-model="editedItem.visibleColor"
-                    :hide-canvas="true"
-                    :hide-inputs="true"
-                    :show-swatches="false"
-                    class="mx-auto"
-                  ></v-color-picker>
-                </v-flex>
-                <v-flex xs12 sm6 md4>
-                  <v-text-field ref="ADLogin" v-model="editedItem.ADLogin" label="Логин в домене"></v-text-field>
-                </v-flex>
-              </v-layout>
-            </v-container>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn color="red darken-1" text @click="close">Отмена</v-btn>
-            <v-btn color="green darken-1" text @click="save">Сохранить</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-    </div>
-
-    <v-card color="grey lighten-4" flat height="200px" tile>
+    <v-card color="grey lighten-4">
       <!-- Панель управления таблицей -->
       <v-toolbar>
-        <v-text-field
-          v-model="searchTerm"
-          prepend-icon="mdi-account-search"
-          label="Поиск"
-          single-line
-          sm="2"
-          md="2"
-          lg="2"
-          hide-details
-          clearable
-          full-width
-          width="200px"
-        ></v-text-field>
+        <v-col cols="3">
+          <v-text-field
+            v-model="searchTerm"
+            prepend-icon="mdi-account-search"
+            label="Поиск"
+            full-width
+            hide-details
+            clearable
+          ></v-text-field>
+        </v-col>
         <v-spacer></v-spacer>
         <v-btn fab text small @click="dialog=true">
           <v-icon color="green">mdi-account-plus</v-icon>
         </v-btn>
       </v-toolbar>
-      <!-- Список сотрудников -->
+
+      <!-- Таблица с сотрудниками -->
       <v-data-table
         :headers="headers"
         :items="activeEmployees"
@@ -72,7 +29,6 @@
         max-width="600px"
         hide-default-footer
         class="elevation-1"
-        :calculate-widths="true"
         :search="searchTerm"
         :loading="loading"
         loading-text="Загрузка данных ... подождите!"
@@ -104,11 +60,51 @@
           <v-alert :value="true" color="error" icon="mdi-linux">Нет данных.</v-alert>
         </template>
       </v-data-table>
+
       <!--элемент пагинации. Собственно ему надо передовать текущую страницу и всего страниц -->
       <div class="text-xs-center pt-3">
         <v-pagination v-model="pagination.page" :length="pages"></v-pagination>
       </div>
     </v-card>
+
+    <!-- Диалог создания/правки карточки сотрудника -->
+    <v-dialog v-model="dialog" max-width="500px">
+      <v-card>
+        <v-card-title>
+          <span class="headline">{{ formTitle }}</span>
+        </v-card-title>
+        <v-card-text>
+          <v-container grid-list-md>
+            <v-layout wrap>
+              <v-flex xs12 sm6 md4>
+                <v-text-field ref="fullName" v-model="editedItem.fullName" label="ФИО"></v-text-field>
+              </v-flex>
+
+              <v-flex xs12 sm6 md4>
+                <v-switch v-model="editedItem.isRegular" label="Штатный"></v-switch>
+              </v-flex>
+              <v-flex xs12 sm6 md4>
+                <v-color-picker
+                  v-model="editedItem.visibleColor"
+                  :hide-canvas="true"
+                  :hide-inputs="true"
+                  :show-swatches="false"
+                  class="mx-auto"
+                ></v-color-picker>
+              </v-flex>
+              <v-flex xs12 sm6 md4>
+                <v-text-field ref="ADLogin" v-model="editedItem.ADLogin" label="Логин в домене"></v-text-field>
+              </v-flex>
+            </v-layout>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="red darken-1" text @click="close">Отмена</v-btn>
+          <v-btn color="green darken-1" text @click="save">Сохранить</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <!--снекбар, уведоплялочка всплывашка, внутри снекбара можно описать любой шаблон -->
     <v-snackbar v-model="snackbar.show" top :color="snackbar.color" :timeout="snackbar.timeout">
       {{ snackbar.text }}
@@ -255,7 +251,7 @@ export default {
       });
     },
     deleteEmployee(input) {
-      if (confirm("Удалить номер ?")) {
+      if (confirm("Удалить запись?")) {
         this.$apollo.mutate({
           mutation: DELETE_EMPLOYEE_MUTATION,
           variables: {

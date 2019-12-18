@@ -36,6 +36,7 @@ export const ALL_SHIFTS_QUERY = gql`
       noAckEventsCount
       tooShortEventsCount
       normalEventsCount
+      freeDurationSum
     }
   }
 `;
