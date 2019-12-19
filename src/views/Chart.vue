@@ -1,5 +1,8 @@
 
-<!-- TODO: навесить методы на кнопки, в методы перенести подготовку интерфейса -->
+<!-- TODO: навесить методы на кнопки, в методы перенести подготовку интерфейса
+маркировать события
+показывать в статистике расшифровку каждой суммы
+ -->
 <template>
   <div>
     <!-- Панель навигации по календарю -->
@@ -23,14 +26,40 @@
         <v-icon>{{typeToLabel[type]}}</v-icon>
       </v-btn>
       <v-spacer></v-spacer>
+      <!-- Кнопка "Пересчитать показатели сотрудников" -->
+      <v-tooltip v-model="show1" bottom>
+        <template v-slot:activator="{ on }">
+          <v-btn
+            fab
+            small
+            text
+            v-on="on"
+            @click="calculateScorings"
+            :loading="scoringsRecalculating"
+          >
+            <v-icon>mdi-refresh</v-icon>
+          </v-btn>
+        </template>
+        <span>Пересчитать показатели сотрудников</span>
+      </v-tooltip>
       <!-- Кнопка "Добавить смену" -->
-      <v-btn fab text small @click="dialogShift.isNew=true,openShiftDialog({})">
-        <v-icon color="green">mdi-plus-one</v-icon>
-      </v-btn>
-      <!-- Кнопка "Заполнить график на месяц" -->
-      <v-btn fab text small @click="dialogFillMonthOpen()">
-        <v-icon color="green">mdi-playlist-plus</v-icon>
-      </v-btn>
+      <v-tooltip v-model="show2" bottom>
+        <template v-slot:activator="{ on }">
+          <v-btn fab small text v-on="on" @click="dialogShift.isNew=true,openShiftDialog({})">
+            <v-icon>mdi-plus-one</v-icon>
+          </v-btn>
+        </template>
+        <span>Добавить смену</span>
+      </v-tooltip>
+      <!-- Кнопка "Заполнить график до конца месяца" -->
+      <v-tooltip v-model="show3" bottom>
+        <template v-slot:activator="{ on }">
+          <v-btn fab small text v-on="on" @click="dialogFillMonthOpen()">
+            <v-icon>mdi-playlist-plus</v-icon>
+          </v-btn>
+        </template>
+        <span>Заполнить график до конца месяца</span>
+      </v-tooltip>
     </v-toolbar>
     <!-- Место для отладки  TODO удалить :event-color="getEventColor"
     <h3>{{ dialogShift.panel }} ---</h3>-->
@@ -53,16 +82,6 @@
         @click:date="clickDate"
       ></v-calendar>
     </v-container>
-
-    <!-- Всплывашка после действий -->
-    <v-snackbar
-      bottom
-      right
-      v-model="snackbar.show"
-      :color="snackbar.color"
-      :timeout="snackbar.timeout"
-      @click="snackbar.show = false"
-    >{{ snackbar.text }}</v-snackbar>
 
     <!-- Диалог создания/правки смены -->
     <v-dialog v-model="dialogShift.show" max-width="600px" @click:outside="closeShiftDialog('')">
@@ -123,7 +142,7 @@
                 <div v-if="dialogShift.showStats">Статистика – самая точная из всех лженаук!</div>
                 <div
                   v-if="!dialogShift.showStats"
-                >Судя по данным статистики, со статистикой у нас будет все в порядке...скоро :)</div>
+                >Судя по данным статистики, со статистикой у нас будет все в порядке.</div>
               </v-expansion-panel-header>
               <v-expansion-panel-content>
                 <v-row>
@@ -285,11 +304,22 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Всплывашка после действий -->
+    <v-snackbar
+      bottom
+      right
+      v-model="snackbar.show"
+      :color="snackbar.color"
+      :timeout="snackbar.timeout"
+      @click="snackbar.show = false"
+    >{{ snackbar.text }}</v-snackbar>
   </div>
 </template>
 
 <script>
 import {
+  CALCULATE_SCORINGS,
   ALL_SHIFTS_QUERY,
   ADD_SHIFT_MUTATION,
   UPDATE_SHIFT_MUTATION,
@@ -319,6 +349,12 @@ export default {
   //Данные для интерфейса
   data() {
     return {
+      //Флаги показа подсказок
+      show1: false,
+      show2: false,
+      show3: false,
+      //Флаг процесса пересчета показателей
+      scoringsRecalculating: false,
       //Структура для диалога заполнения граифка на месяц
       dialogFillMonth: {
         show: false,
@@ -380,7 +416,6 @@ export default {
   },
   computed: {
     calendarFocus() {
-      //alert(this.focus);
       return this.focus
         ? new Date(this.focus).getTime().toString()
         : new Date().getTime().toString();
@@ -443,6 +478,21 @@ export default {
     this.$refs.calendar.checkChange();
   },
   methods: {
+    //Запускает пересчет показателей сотрудников за выбранный месяц
+    async calculateScorings() {
+      this.scoringsRecalculating = true;
+      await this.$apollo.mutate({
+        mutation: CALCULATE_SCORINGS,
+        variables: {
+          TS: new Date(this.focus).getTime().toString()
+        }
+      });
+      this.$apollo.queries.Shifts.refetch();
+      this.scoringsRecalculating = false;
+      this.snackbar.text = "Показатели сотрудников обновлены";
+      this.snackbar.color = "green";
+      this.snackbar.show = true;
+    },
     changeCalendarType() {
       if (this.type === "month") this.type = "week";
       else this.type = "month";
@@ -570,33 +620,39 @@ export default {
     },
     //Заполнить график до конца месяца
     fillShiftsForMonth() {
-      //вычисляем UNIX-time начала первой смены
-      var iStartTime =
-        new Date(this.dialogFillMonth.startDate).getTime() +
-        this.dialogFillMonth.startTime.slice(0, 2) * 3600000 +
-        this.dialogFillMonth.startTime.slice(3, 5) * 60000;
-      //вычисляем месяц, который будем заполнять сменами
-      const tempStartMonth = new Date(iStartTime).getMonth();
-      //месяц окончания рассчитываемой смены
-      var tempCurrentMonth = tempStartMonth;
-      //переводим длительность смены в мс
-      const iDuration =
-        this.dialogFillMonth.duration.slice(0, 2) * 3600000 +
-        this.dialogFillMonth.duration.slice(3, 5) * 60000;
-      //Пока не залезем на следующий месяц, заполняем график
-      while (tempCurrentMonth == tempStartMonth) {
-        for (let employee of this.dialogFillMonth.shiftsSequence) {
-          var tempEvent = {
-            utStart: iStartTime,
-            utEnd: iStartTime + iDuration,
-            employee: this.dialogFillMonth.employees[employee]
-          };
-          this.addShiftInDB(tempEvent);
-          iStartTime += iDuration;
-          tempCurrentMonth = new Date(tempEvent.utEnd).getMonth();
+      if (
+        confirm(
+          "Тут сейчас такое начнется! Точно заполнить график сменами с выбранной даты до конца месяца?"
+        )
+      ) {
+        //вычисляем UNIX-time начала первой смены
+        var iStartTime =
+          new Date(this.dialogFillMonth.startDate).getTime() +
+          this.dialogFillMonth.startTime.slice(0, 2) * 3600000 +
+          this.dialogFillMonth.startTime.slice(3, 5) * 60000;
+        //вычисляем месяц, который будем заполнять сменами
+        const tempStartMonth = new Date(iStartTime).getMonth();
+        //месяц окончания рассчитываемой смены
+        var tempCurrentMonth = tempStartMonth;
+        //переводим длительность смены в мс
+        const iDuration =
+          this.dialogFillMonth.duration.slice(0, 2) * 3600000 +
+          this.dialogFillMonth.duration.slice(3, 5) * 60000;
+        //Пока не залезем на следующий месяц, заполняем график
+        while (tempCurrentMonth == tempStartMonth) {
+          for (let employee of this.dialogFillMonth.shiftsSequence) {
+            var tempEvent = {
+              utStart: iStartTime,
+              utEnd: iStartTime + iDuration,
+              employee: this.dialogFillMonth.employees[employee]
+            };
+            this.addShiftInDB(tempEvent);
+            iStartTime += iDuration;
+            tempCurrentMonth = new Date(tempEvent.utEnd).getMonth();
+          }
         }
+        this.dialogFillMonth.show = false;
       }
-      this.dialogFillMonth.show = false;
     },
     getEventColor(event) {
       return event.color;
@@ -622,7 +678,6 @@ export default {
         ? "th"
         : ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][d % 10];
     },
-
     //Добавить смену в БД
     addShiftInDB(event) {
       this.$apollo.mutate({

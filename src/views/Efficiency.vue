@@ -1,7 +1,6 @@
 <template>
   <div>
-    <!-- Панель навигации по календарю -->
-
+    <!-- Панель навигации -->
     <v-toolbar>
       <!-- Кнопка "Сегодня" -->
       <v-btn fab text small @click="setToday">
@@ -17,12 +16,25 @@
       <v-btn fab text small @click="next">
         <v-icon>mdi-chevron-right</v-icon>
       </v-btn>
-      <!--<h3>{{this.selected}}</h3>-->
+      <!--место для отладки
+      <h3>{{this.eventsLoading}}</h3>-->
       <v-spacer></v-spacer>
-      <!-- Кнопка "Вперед" -->
-      <v-btn fab text small @click="calculateScorings">
-        <v-icon>mdi-refresh</v-icon>
-      </v-btn>
+      <!-- Кнопка "Пересчитать показатели сотрудников" -->
+      <v-tooltip v-model="show1" left>
+        <template v-slot:activator="{ on }">
+          <v-btn
+            fab
+            small
+            text
+            v-on="on"
+            @click="calculateScorings"
+            :loading="scoringsRecalculating"
+          >
+            <v-icon>mdi-refresh</v-icon>
+          </v-btn>
+        </template>
+        <span>Пересчитать показатели сотрудников</span>
+      </v-tooltip>
     </v-toolbar>
 
     <!-- Таблица с показателями сотрудников -->
@@ -37,6 +49,8 @@
         @item-selected="showDetails"
         hide-default-footer
         no-data-text="Нет данных"
+        :loading="scoringsRecalculating"
+        loading-text="Загружаем данные"
       >
         <template v-slot:item.employeeId="{ item }">{{nameOfEmployee(item.employeeId)}}</template>
         <template v-slot:item.freeDurationSum="{ item }">
@@ -71,9 +85,10 @@
       <!-- Таблица с событиями -->
       <v-data-table
         v-show="selected.showDetails"
-        :headers="headers"
+        :headers="eventHeaders"
         :items="events"
         no-data-text="Нет данных"
+        :loading="eventsLoading"
         loading-text="Загружаем данные"
       >
         <template v-slot:no-data></template>
@@ -121,6 +136,10 @@ export default {
     }
   },
   data: () => ({
+    //Флаг показа подсказок
+    show1: false,
+    eventsLoading: false,
+    scoringsRecalculating: false,
     focus: new Date(),
     selected: { item: [], showDetails: false },
     scoringHeaders: [
@@ -144,13 +163,8 @@ export default {
         align: "right"
       }
     ],
-    headers: [
-      {
-        text: "Время события",
-        //align: "left",
-        //sortable: false,
-        value: "tsStart"
-      },
+    eventHeaders: [
+      { text: "Время события", value: "tsStart" },
       { text: "Время подтверждения", value: "tsAck" },
       { text: "Время окончания", value: "tsEnd" },
       { text: "Сотрудник", value: "ADLogin" },
@@ -161,10 +175,16 @@ export default {
       { text: ":)", value: "isForgiven" }
     ]
   }),
-
-  computed: {
-    formTitle() {
-      return this.editedIndex === -1 ? "New Item" : "Edit Item";
+  watch: {
+    events: function(val) {
+      if (val.length > 0) {
+        this.eventsLoading = false;
+      }
+    },
+    scorings: function(val) {
+      if (val.length > 0) {
+        this.scoringsRecalculating = false;
+      }
     }
   },
   methods: {
@@ -179,26 +199,26 @@ export default {
       const month = this.focus.getMonth() + 1;
       this.focus = new Date(this.focus.setMonth(month));
     },
-    calculateScorings() {
-      this.$apollo.mutate({
+    //Запускает пересчет показателей сотрудников за выбранный месяц
+    async calculateScorings() {
+      this.scorings = [];
+      this.scoringsRecalculating = true;
+      await this.$apollo.mutate({
         mutation: CALCULATE_SCORINGS,
         variables: {
           TS: this.focus.getTime().toString()
-        },
-        refetchQueries: [
-          {
-            query: ALL_SCORINGS_QUERY,
-            variables: {
-              TS: this.focus.getTime().toString()
-            }
-          }
-        ]
+        }
       });
+      this.$apollo.queries.scorings.refetch();
     },
+    //Показывает события за смены сотрудника
     showDetails(arg) {
-      this.$apollo.queries.events.refetch();
       this.selected.showDetails = arg.value;
+      this.eventsLoading = true;
+      this.events = [];
+      this.$apollo.queries.events.refetch();
     },
+    //По идентификатору возвращает имя сотрудника
     nameOfEmployee(employeeId) {
       let name = "";
       if (this.Employees) {
@@ -210,6 +230,7 @@ export default {
       }
       return name;
     },
+    //Возвращает кол-во событий за смены сотрудника
     eventsCount() {
       if (this.events) {
         return this.events.length;

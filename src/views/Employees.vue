@@ -1,118 +1,114 @@
 <template>
-  <v-app>
-    <v-card color="grey lighten-4">
-      <!-- Панель управления таблицей -->
-      <v-toolbar>
-        <v-col cols="3">
-          <v-text-field
-            v-model="searchTerm"
-            prepend-icon="mdi-account-search"
-            label="Поиск"
-            full-width
-            hide-details
-            clearable
-          ></v-text-field>
-        </v-col>
-        <v-spacer></v-spacer>
-        <v-btn fab text small @click="dialog=true">
-          <v-icon color="green">mdi-account-plus</v-icon>
-        </v-btn>
-      </v-toolbar>
+  <div>
+    <!-- Панель управления таблицей -->
+    <v-toolbar>
+      <!-- Строка поиска -->
+      <v-col cols="3">
+        <v-text-field
+          v-model="searchTerm"
+          prepend-icon="mdi-account-search"
+          label="Поиск"
+          full-width
+          hide-details
+          clearable
+        ></v-text-field>
+      </v-col>
+      <v-spacer></v-spacer>
+      <!-- Кнопка "Добавить сотрудника" -->
+      <v-tooltip v-model="show1" bottom>
+        <template v-slot:activator="{ on }">
+          <v-btn fab small text v-on="on" @click="employeeDialog.show=true">
+            <v-icon>mdi-account-plus</v-icon>
+          </v-btn>
+        </template>
+        <span>Добавить сотрудника</span>
+      </v-tooltip>
+    </v-toolbar>
 
-      <!-- Таблица с сотрудниками -->
-      <v-data-table
-        :headers="headers"
-        :items="activeEmployees"
-        :page.sync="pagination.page"
-        :items-per-page="pagination.rowsPerPage"
-        item-key="id"
-        max-width="600px"
-        hide-default-footer
-        class="elevation-1"
-        :search="searchTerm"
-        :loading="loading"
-        loading-text="Загрузка данных ... подождите!"
-      >
-        <!-- у таблицы есть несколько предопределенных слотов, скрытых элментов, которым можно
-        описать шаблон и выводить при опреденных событиях-->
-        <template v-slot:item.visibleColor="{ item }">
-          <v-chip :color="item.visibleColor"></v-chip>
-        </template>
-        <template v-slot:item.isRegular="{ item }">
-          <v-chip v-if="item.isRegular">
-            <v-icon>mdi-check</v-icon>
-          </v-chip>
-        </template>
-        <template v-slot:item.action="{ item }">
-          <v-icon class="mr-2" @click="selectEmployee(item)">mdi-pencil</v-icon>
-          <v-icon @click="deleteEmployee(item)">mdi-delete</v-icon>
-        </template>
-        <!--если нет данных при поиске -->
-        <template v-slot:no-results>
-          <v-alert
-            :value="true"
-            color="orange"
-            icon="mdi-linux"
-          >По фразе "{{ searchTerm }}" ничего не найдено.</v-alert>
-        </template>
-        <!--Если бекенд не вернул ничего -->
-        <template v-slot:no-data>
-          <v-alert :value="true" color="error" icon="mdi-linux">Нет данных.</v-alert>
-        </template>
-      </v-data-table>
-
-      <!--элемент пагинации. Собственно ему надо передовать текущую страницу и всего страниц -->
-      <div class="text-xs-center pt-3">
-        <v-pagination v-model="pagination.page" :length="pages"></v-pagination>
-      </div>
-    </v-card>
+    <!-- Таблица с сотрудниками -->
+    <v-data-table
+      :headers="headers"
+      :items="activeEmployees"
+      item-key="id"
+      max-width="600px"
+      hide-default-footer
+      class="elevation-1"
+      :search="searchTerm"
+      :loading="loading"
+      loading-text="Загрузка данных ... подождите!"
+    >
+      <!-- Показываем цвет -->
+      <template v-slot:item.visibleColor="{ item }">
+        <v-chip :color="item.visibleColor"></v-chip>
+      </template>
+      <!-- Признак "дежурный" -->
+      <template v-slot:item.isRegular="{ item }">
+        <v-chip v-if="item.isRegular">
+          <v-icon>mdi-check</v-icon>
+        </v-chip>
+      </template>
+      <!-- Действия -->
+      <template v-slot:item.action="{ item }">
+        <v-icon class="mr-2" @click="openEmployeeDialog(item)">mdi-pencil</v-icon>
+        <v-icon @click="deleteEmployee(item)">mdi-delete</v-icon>
+      </template>
+      <!--если нет данных при поиске -->
+      <template v-slot:no-results>
+        <v-alert
+          :value="true"
+          color="orange"
+          icon="mdi-linux"
+        >По фразе "{{ searchTerm }}" ничего не найдено.</v-alert>
+      </template>
+    </v-data-table>
 
     <!-- Диалог создания/правки карточки сотрудника -->
-    <v-dialog v-model="dialog" max-width="500px">
+    <v-dialog v-model="employeeDialog.show" max-width="500px" @click:outside="closeDialog">
       <v-card>
         <v-card-title>
-          <span class="headline">{{ formTitle }}</span>
+          <span class="headline">{{ formDialogTitle }}</span>
         </v-card-title>
         <v-card-text>
-          <v-container grid-list-md>
-            <v-layout wrap>
-              <v-flex xs12 sm6 md4>
-                <v-text-field ref="fullName" v-model="editedItem.fullName" label="ФИО"></v-text-field>
-              </v-flex>
-
-              <v-flex xs12 sm6 md4>
-                <v-switch v-model="editedItem.isRegular" label="Штатный"></v-switch>
-              </v-flex>
-              <v-flex xs12 sm6 md4>
-                <v-color-picker
-                  v-model="editedItem.visibleColor"
-                  :hide-canvas="true"
-                  :hide-inputs="true"
-                  :show-swatches="false"
-                  class="mx-auto"
-                ></v-color-picker>
-              </v-flex>
-              <v-flex xs12 sm6 md4>
-                <v-text-field ref="ADLogin" v-model="editedItem.ADLogin" label="Логин в домене"></v-text-field>
-              </v-flex>
-            </v-layout>
-          </v-container>
+          <v-row>
+            <v-col cols="6">
+              <v-text-field ref="fullName" v-model="employeeDialog.fullName" label="ФИО"></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field ref="ADLogin" v-model="employeeDialog.ADLogin" label="Логин в домене"></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="8">
+              <v-color-picker
+                v-model="employeeDialog.visibleColor"
+                :hide-canvas="true"
+                :hide-inputs="true"
+                :show-swatches="false"
+                class="mx-auto"
+              ></v-color-picker>
+            </v-col>
+            <v-col cols="4">
+              <v-checkbox v-model="employeeDialog.isRegular" label="Дежурный"></v-checkbox>
+            </v-col>
+          </v-row>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="red darken-1" text @click="close">Отмена</v-btn>
-          <v-btn color="green darken-1" text @click="save">Сохранить</v-btn>
+          <v-btn color="red darken-1" text @click="closeDialog">Отмена</v-btn>
+          <v-btn color="green darken-1" text @click="saveEmployee">Сохранить</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <!--снекбар, уведоплялочка всплывашка, внутри снекбара можно описать любой шаблон -->
-    <v-snackbar v-model="snackbar.show" top :color="snackbar.color" :timeout="snackbar.timeout">
-      {{ snackbar.text }}
-      <v-btn fab text :color="snackbar.color" @click="snackbar.show = false">
-        <v-icon dark>mdi-close</v-icon>
-      </v-btn>
-    </v-snackbar>
-  </v-app>
+
+    <!--Всплывашка-->
+    <v-snackbar
+      v-model="snackbar.show"
+      bottom
+      right
+      :color="snackbar.color"
+      :timeout="snackbar.timeout"
+    >{{ snackbar.text }}</v-snackbar>
+  </div>
 </template>
 
 <script>
@@ -125,65 +121,57 @@ import {
 } from "@/queries/queries.js";
 
 export default {
-  name: "App",
   data() {
     return {
-      loading: true,
-      dialog: false,
-      // структура для уведомлений
+      //Флаг показа подсказок
+      show1: false,
+      //Структура для всплывашки
       snackbar: {
         show: false,
         color: "green",
         text: "Сообщение",
         timeout: 5000 //само пропадет через 5 сек
       },
-      // структура данных при редактировании
-      editedItem: {
+      //Структура для диалога с карточкой сотрудника
+      employeeDialog: {
+        show: false,
         id: "",
         fullName: "",
         ADLogin: "",
         isRegular: false,
         visibleColor: ""
       },
-      // структура данных для простоты очистки после правки этот объект вливаем в editedItem
-      defaultItem: {
-        id: "",
-        fullName: "",
-        ADLogin: "",
-        isRegular: false,
-        visibleColor: ""
-      },
-      searchTerm: "", // переременная, где будет строка поиска
-      //параметры пагинации
-      pagination: {
-        descending: false, // сортировка по убыванию выключена
-        sortBy: "id", // поле сортировки по умолчанию
-        page: 1, // текущая страница
-        rowsPerPage: 15 // по сколько выводить строк в таблицу
-      },
+      //Поисковый запрос
+      searchTerm: "",
+      //Заголовки для таблицы
       headers: [
         {
           text: "ФИО",
-          align: "start",
+          align: "left",
           sortable: true,
           value: "fullName"
         },
         {
+          text: "Логин в домене",
+          align: "right",
+          sortable: true,
+          value: "ADLogin"
+        },
+        {
           text: "Цвет",
-          align: "end",
+          align: "right",
           sortable: false,
           value: "visibleColor"
         },
         {
           text: "Дежурный",
-          align: "end",
+          align: "right",
           sortable: true,
           value: "isRegular"
         },
-        // столбец для инструментов правки и удаления
         {
           text: "",
-          align: "end",
+          align: "right",
           value: "action",
           sortable: false
         }
@@ -191,57 +179,45 @@ export default {
     };
   },
   apollo: {
+    //Закачивает в массив данные с бэкенда
     activeEmployees: {
       query: ACTIVE_EMPLOYEES_QUERY
     }
   },
   computed: {
-    formTitle() {
-      return this.editedItem.id === ""
+    //Возвращает статус загрузки данных с бэкенда
+    loading() {
+      if (this.activeEmployees) {
+        return false;
+      } else {
+        return true;
+      }
+    },
+    //Возвращает заголовок для диалога
+    formDialogTitle() {
+      return this.employeeDialog.id === ""
         ? "Добавить сотрудника"
         : "Изменить данные сотрудника";
-    },
-    pages() {
-      // если количество записей на странице нулевое, то на ноль делить нельзя
-      // выводим сразу количество страниц 0 и пагинатора не будет
-      if (
-        this.activeEmployees &&
-        (this.pagination.rowsPerPage != null ||
-          this.pagination.rowsPerPage != 0)
-      ) {
-        // если данные с бэкенда есть, то считаем
-        return Math.ceil(
-          this.activeEmployees.length / this.pagination.rowsPerPage
-        );
-      } else return 0; //
-    }
-  },
-  watch: {
-    pages() {
-      // отслеживаем изменение расчета страниц, если оно было, то данные есть с бэкенда
-      // и загрузчик выключаем
-      if (this.activeEmployees) this.loading = false;
-    },
-    dialog(val) {
-      val || this.close();
     }
   },
   methods: {
-    close() {
-      this.dialog = false;
-      setTimeout(() => {
-        this.editedItem = Object.assign({}, this.defaultItem);
-        this.editedIndex = -1;
-      }, 300);
+    //Заполняет данные диалога дефолтными значениями
+    fillDialogWithDefaultValues() {
+      this.employeeDialog.id = "";
+      this.employeeDialog.fullName = "";
+      this.employeeDialog.ADLogin = "";
+      this.employeeDialog.isRegular = false;
+      this.employeeDialog.visibleColor = "";
     },
+    //Добавляет учетную запись в БД
     addEmployee() {
       this.$apollo.mutate({
         mutation: ADD_EMPLOYEE_MUTATION,
         variables: {
-          fullName: this.editedItem.fullName,
-          ADLogin: this.editedItem.ADLogin,
-          isRegular: this.editedItem.isRegular,
-          visibleColor: this.editedItem.visibleColor
+          fullName: this.employeeDialog.fullName,
+          ADLogin: this.employeeDialog.ADLogin,
+          isRegular: this.employeeDialog.isRegular,
+          visibleColor: this.employeeDialog.visibleColor
         },
         refetchQueries: [
           {
@@ -250,8 +226,27 @@ export default {
         ]
       });
     },
+    //Обновляет данные учетной записи в БД
+    updateEmployee() {
+      this.$apollo.mutate({
+        mutation: UPDATE_EMPLOYEE_MUTATION,
+        variables: {
+          id: this.employeeDialog.id,
+          fullName: this.employeeDialog.fullName,
+          ADLogin: this.employeeDialog.ADLogin,
+          isRegular: this.employeeDialog.isRegular,
+          visibleColor: this.employeeDialog.visibleColor
+        },
+        refetchQueries: [
+          {
+            query: ACTIVE_EMPLOYEES_QUERY
+          }
+        ]
+      });
+    },
+    //Удаляет учетную запись из БД
     deleteEmployee(input) {
-      if (confirm("Удалить запись?")) {
+      if (confirm("Точно удалить запись?")) {
         this.$apollo.mutate({
           mutation: DELETE_EMPLOYEE_MUTATION,
           variables: {
@@ -263,54 +258,38 @@ export default {
             }
           ]
         });
-        this.snackbar.text = `УДАЛЕНО! ${this.editedItem.fullName}`;
+        this.snackbar.text = `Удалена учетная запись '${this.employeeDialog.fullName}'`;
         this.snackbar.color = "red";
         this.snackbar.show = true;
       }
     },
-    // эта функция заполняет поля ввода в форме редактирования
-    selectEmployee(input) {
-      this.editedItem.id = input.id;
-      this.editedItem.fullName = input.fullName;
-      this.editedItem.ADLogin = input.ADLogin;
-      this.editedItem.isRegular = input.isRegular;
-      this.editedItem.visibleColor = input.visibleColor;
-      this.dialog = true;
+    //Открывает диалог с карточкой сотрудника
+    openEmployeeDialog(input) {
+      this.employeeDialog.id = input.id;
+      this.employeeDialog.fullName = input.fullName;
+      this.employeeDialog.ADLogin = input.ADLogin;
+      this.employeeDialog.isRegular = input.isRegular;
+      this.employeeDialog.visibleColor = input.visibleColor;
+      this.employeeDialog.show = true;
     },
-    //в реализации этого метода используются в качестве параметров поля раздельно
-    // это не обязательно, просто в качестве примера. При добавлении объект, а тут поля
-    updateEmployee() {
-      this.$apollo.mutate({
-        mutation: UPDATE_EMPLOYEE_MUTATION,
-        variables: {
-          id: this.editedItem.id,
-          fullName: this.editedItem.fullName,
-          ADLogin: this.editedItem.ADLogin,
-          isRegular: this.editedItem.isRegular,
-          visibleColor: this.editedItem.visibleColor
-        },
-        refetchQueries: [
-          {
-            query: ACTIVE_EMPLOYEES_QUERY
-          }
-        ]
-      });
-    },
-    save() {
-      var mode = "ИСПРАВЛЕНО!";
-      if (this.editedItem.id != "") {
+    //Сохраняет учетную запись сотрудника
+    saveEmployee() {
+      var mode = "Изменена учетная запись";
+      if (this.employeeDialog.id != "") {
         this.updateEmployee();
       } else {
         this.addEmployee();
-        this.pagination.sortBy = "id";
-        this.pagination.descending = false;
-        this.pagination.page = this.pages;
-        mode = "ДОБАВЛЕНО!";
+        mode = "Создана учетная запись";
       }
-      this.snackbar.text = `${mode} ${this.editedItem.fullName}`;
+      this.snackbar.text = `${mode} ${this.employeeDialog.fullName}`;
       this.snackbar.color = "green";
       this.snackbar.show = true;
-      this.close();
+      this.closeDialog();
+    },
+    //Закрывает диалог с карточкой сотрудника
+    closeDialog() {
+      this.employeeDialog.show = false;
+      this.fillDialogWithDefaultValues();
     }
   }
 };
