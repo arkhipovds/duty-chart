@@ -2,6 +2,7 @@
 <!-- TODO: навесить методы на кнопки, в методы перенести подготовку интерфейса
 маркировать события
 показывать в статистике расшифровку каждой суммы
+перенести элементы управления в в-кард
  -->
 <template>
   <div>
@@ -29,14 +30,7 @@
       <!-- Кнопка "Пересчитать показатели сотрудников" -->
       <v-tooltip v-model="show1" bottom>
         <template v-slot:activator="{ on }">
-          <v-btn
-            fab
-            small
-            text
-            v-on="on"
-            @click="calculateScorings"
-            :loading="scoringsRecalculating"
-          >
+          <v-btn fab small text v-on="on" @click="updateScorings" :loading="scoringsRecalculating">
             <v-icon>mdi-refresh</v-icon>
           </v-btn>
         </template>
@@ -66,21 +60,23 @@
 
     <!-- Календарь -->
     <v-container fluid>
-      <v-calendar
-        ref="calendar"
-        v-model="focus"
-        color="primary"
-        locale="ru"
-        interval-height="25"
-        :events="shifts"
-        :event-color="getEventColor"
-        :event-margin-bottom="3"
-        :event-more="false"
-        :type="type"
-        :weekdays="[1,2,3,4,5,6,0]"
-        @click:event="openShiftDialog"
-        @click:date="clickDate"
-      ></v-calendar>
+      <v-card>
+        <v-calendar
+          ref="calendar"
+          v-model="focus"
+          color="primary"
+          locale="ru"
+          interval-height="25"
+          :events="parsedShifts"
+          :event-color="getEventColor"
+          :event-margin-bottom="3"
+          :event-more="false"
+          :type="type"
+          :weekdays="[1,2,3,4,5,6,0]"
+          @click:event="openShiftDialog"
+          @click:date="clickDate"
+        ></v-calendar>
+      </v-card>
     </v-container>
 
     <!-- Диалог создания/правки смены -->
@@ -100,7 +96,7 @@
                   <v-col cols="12">
                     <v-select
                       v-model="dialogShift.employee"
-                      :items="Employees"
+                      :items="employees"
                       item-text="fullName"
                       item-value="id"
                       return-object
@@ -331,7 +327,7 @@ import {
 export default {
   //Запрашиваем данные о сменах и сотрудниках из БД
   apollo: {
-    Shifts: {
+    shifts: {
       query: ALL_SHIFTS_QUERY,
       variables() {
         return {
@@ -339,7 +335,7 @@ export default {
         };
       }
     },
-    Employees: {
+    employees: {
       query: ALL_EMPLOYEES_QUERY
     },
     activeEmployees: {
@@ -425,11 +421,11 @@ export default {
       return this.dialogShift.isNew ? "Новая смена" : "Cмена";
     },
     //Преобразовываем массив со сменами в формат, подходящий для календаря
-    shifts() {
+    parsedShifts() {
       //!!!!!!!!!!!!!!!TODO переписать стрелочную функцию на нормальную, с проверками существования всех объектов и дефолтным поведением
       var newShifts = [];
-      if (this.Shifts && this.Employees)
-        newShifts = this.Shifts.map(element => {
+      if (this.shifts && this.employees)
+        newShifts = this.shifts.map(element => {
           var shiftIndicator = "";
           if (
             element.normalEventsCount > 0 ||
@@ -449,11 +445,11 @@ export default {
             start: this.msToDateString(element.start),
             end: this.msToDateString(element.end),
             name:
-              this.Employees[
-                this.Employees.findIndex(el => el.id === element.employeeId)
+              this.employees[
+                this.employees.findIndex(el => el.id === element.employeeId)
               ].fullName + shiftIndicator,
-            color: this.Employees[
-              this.Employees.findIndex(el => el.id === element.employeeId)
+            color: this.employees[
+              this.employees.findIndex(el => el.id === element.employeeId)
             ].visibleColor,
             employeeId: element.employeeId,
             ackInTimeEventsCount: element.ackInTimeEventsCount,
@@ -479,7 +475,7 @@ export default {
   },
   methods: {
     //Запускает пересчет показателей сотрудников за выбранный месяц
-    async calculateScorings() {
+    async updateScorings() {
       this.scoringsRecalculating = true;
       await this.$apollo.mutate({
         mutation: CALCULATE_SCORINGS,
@@ -487,7 +483,7 @@ export default {
           TS: new Date(this.focus).getTime().toString()
         }
       });
-      this.$apollo.queries.Shifts.refetch();
+      this.$apollo.queries.shifts.refetch();
       this.scoringsRecalculating = false;
       this.snackbar.text = "Показатели сотрудников обновлены";
       this.snackbar.color = "green";
@@ -509,7 +505,7 @@ export default {
         //Записываем идентификатор выбранного события
         this.dialogShift.id = event.id;
         //По employeeId возвращаем объект employee
-        this.dialogShift.employee = this.Employees.find(
+        this.dialogShift.employee = this.employees.find(
           o => o.id === event.employeeId
         );
         this.dialogShift.startDate = event.start.slice(0, 10);
@@ -540,8 +536,8 @@ export default {
         this.dialogShift.startDate = this.selectedDay
           ? this.selectedDay
           : this.focus.slice(0, 10);
-        this.dialogShift.employee = this.Employees[0]
-          ? this.Employees[0]
+        this.dialogShift.employee = this.employees[0]
+          ? this.employees[0]
           : null;
         this.dialogShift.startTime = "08:00";
         this.dialogShift.duration = "12:00";
@@ -665,13 +661,13 @@ export default {
       this.$refs.calendar.prev();
       this.dialogFillMonth.startDate = this.focus.slice(0, 8) + "01";
       //Обновляем список смен
-      this.$apollo.queries.Shifts.refetch();
+      this.$apollo.queries.shifts.refetch();
     },
     next() {
       this.$refs.calendar.next();
       this.dialogFillMonth.startDate = this.focus.slice(0, 8) + "01";
       //Обновляем список смен
-      this.$apollo.queries.Shifts.refetch();
+      this.$apollo.queries.shifts.refetch();
     },
     nth(d) {
       return d > 3 && d < 21

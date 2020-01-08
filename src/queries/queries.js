@@ -2,8 +2,8 @@ import { gql } from "apollo-boost";
 
 //Запрос списка всех событий
 export const ALL_EVENTS_QUERY = gql`
-  query events($TS: String!, $employeeId: String!) {
-    events(TS: $TS, employeeId: $employeeId) {
+  query events($TS: String!, $employeeId: String!, $ackType: String!) {
+    events(TS: $TS, employeeId: $employeeId, ackType: $ackType) {
       id
       tsStart
       tsAck
@@ -13,20 +13,19 @@ export const ALL_EVENTS_QUERY = gql`
       host
       severity
       freeDuration
-      isForgiven
     }
   }
 `;
 //Запрос на расчет показателей за месяц
 export const CALCULATE_SCORINGS = gql`
   mutation($TS: String!) {
-    calculateScorings(TS: $TS)
+    updateScorings(TS: $TS)
   }
 `;
 //Запрос списка всех смен
 export const ALL_SHIFTS_QUERY = gql`
-  query Shifts($TS: String!) {
-    Shifts(TS: $TS) {
+  query shifts($TS: String!) {
+    shifts(TS: $TS) {
       id
       start
       end
@@ -71,8 +70,8 @@ export const DELETE_SHIFT_MUTATION = gql`
 
 //Запрос списка всех сотрудников
 export const ALL_EMPLOYEES_QUERY = gql`
-  query Employees {
-    Employees {
+  query employees {
+    employees {
       id
       fullName
       ADLogin
@@ -83,7 +82,7 @@ export const ALL_EMPLOYEES_QUERY = gql`
 `;
 //Запрос списка активных сотрудников
 export const ACTIVE_EMPLOYEES_QUERY = gql`
-  query Employees {
+  query employees {
     activeEmployees {
       id
       fullName

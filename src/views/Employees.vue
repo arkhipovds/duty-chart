@@ -26,41 +26,45 @@
     </v-toolbar>
 
     <!-- Таблица с сотрудниками -->
-    <v-data-table
-      :headers="headers"
-      :items="activeEmployees"
-      item-key="id"
-      max-width="600px"
-      hide-default-footer
-      class="elevation-1"
-      :search="searchTerm"
-      :loading="loading"
-      loading-text="Загрузка данных ... подождите!"
-    >
-      <!-- Показываем цвет -->
-      <template v-slot:item.visibleColor="{ item }">
-        <v-chip :color="item.visibleColor"></v-chip>
-      </template>
-      <!-- Признак "дежурный" -->
-      <template v-slot:item.isRegular="{ item }">
-        <v-chip v-if="item.isRegular">
-          <v-icon>mdi-check</v-icon>
-        </v-chip>
-      </template>
-      <!-- Действия -->
-      <template v-slot:item.action="{ item }">
-        <v-icon class="mr-2" @click="openEmployeeDialog(item)">mdi-pencil</v-icon>
-        <v-icon @click="deleteEmployee(item)">mdi-delete</v-icon>
-      </template>
-      <!--если нет данных при поиске -->
-      <template v-slot:no-results>
-        <v-alert
-          :value="true"
-          color="orange"
-          icon="mdi-linux"
-        >По фразе "{{ searchTerm }}" ничего не найдено.</v-alert>
-      </template>
-    </v-data-table>
+    <v-container fluid>
+      <v-card>
+        <v-data-table
+          :headers="headers"
+          :items="activeEmployees"
+          item-key="id"
+          max-width="600px"
+          hide-default-footer
+          class="elevation-1"
+          :search="searchTerm"
+          :loading="loading"
+          loading-text="Загрузка данных ... подождите!"
+        >
+          <!-- Показываем цвет -->
+          <template v-slot:item.visibleColor="{ item }">
+            <v-chip :color="item.visibleColor"></v-chip>
+          </template>
+          <!-- Признак "дежурный" -->
+          <template v-slot:item.isRegular="{ item }">
+            <v-chip v-if="item.isRegular">
+              <v-icon>mdi-check</v-icon>
+            </v-chip>
+          </template>
+          <!-- Действия -->
+          <template v-slot:item.action="{ item }">
+            <v-icon class="mr-2" @click="openEmployeeDialog(item)">mdi-pencil</v-icon>
+            <v-icon @click="deleteEmployee(item)">mdi-delete</v-icon>
+          </template>
+          <!--если нет данных при поиске -->
+          <template v-slot:no-results>
+            <v-alert
+              :value="true"
+              color="orange"
+              icon="mdi-linux"
+            >По фразе "{{ searchTerm }}" ничего не найдено.</v-alert>
+          </template>
+        </v-data-table>
+      </v-card>
+    </v-container>
 
     <!-- Диалог создания/правки карточки сотрудника -->
     <v-dialog v-model="employeeDialog.show" max-width="500px" @click:outside="closeDialog">

@@ -17,19 +17,12 @@
         <v-icon>mdi-chevron-right</v-icon>
       </v-btn>
       <!--место для отладки
-      <h3>{{this.eventsLoading}}</h3>-->
+      <h3>{{this.ackTypeId}}</h3>-->
       <v-spacer></v-spacer>
       <!-- Кнопка "Пересчитать показатели сотрудников" -->
       <v-tooltip v-model="show1" left>
         <template v-slot:activator="{ on }">
-          <v-btn
-            fab
-            small
-            text
-            v-on="on"
-            @click="calculateScorings"
-            :loading="scoringsRecalculating"
-          >
+          <v-btn fab small text v-on="on" @click="updateScorings" :loading="scoringsRecalculating">
             <v-icon>mdi-refresh</v-icon>
           </v-btn>
         </template>
@@ -39,68 +32,84 @@
 
     <!-- Таблица с показателями сотрудников -->
     <v-container fluid>
-      <v-data-table
-        v-model="selected.item"
-        :headers="scoringHeaders"
-        :items="scorings"
-        item-key="id"
-        :single-select="true"
-        show-select
-        @item-selected="showDetails"
-        hide-default-footer
-        no-data-text="Нет данных"
-        :loading="scoringsRecalculating"
-        loading-text="Загружаем данные"
-      >
-        <template v-slot:item.employeeId="{ item }">{{nameOfEmployee(item.employeeId)}}</template>
-        <template v-slot:item.freeDurationSum="{ item }">
-          {{Math.round(
-          item.freeDurationSum / (item.normalEventsCount*60000)
-          )}}
-        </template>
-        <template v-slot:item.ackInTimeEventsCount="{ item }">
-          <b>
+      <v-card>
+        <v-card-title>Показатели сотрудников</v-card-title>
+        <v-data-table
+          v-model="selected.item"
+          :headers="scoringHeaders"
+          :items="scorings"
+          item-key="id"
+          :single-select="true"
+          show-select
+          @item-selected="showDetails"
+          hide-default-footer
+          no-data-text="Нет данных"
+          :loading="scoringsRecalculating"
+          loading-text="Загружаем данные"
+        >
+          <template v-slot:item.employeeId="{ item }">{{nameOfEmployee(item.employeeId)}}</template>
+          <template v-slot:item.freeDurationSum="{ item }">
             {{Math.round(
-            (item.ackInTimeEventsCount * 100) / item.normalEventsCount
+            item.freeDurationSum / (item.normalEventsCount*60000)
+            )}}
+          </template>
+          <template v-slot:item.ackInTimeEventsCount="{ item }">
+            <b>
+              {{Math.round(
+              (item.ackInTimeEventsCount * 100) / item.normalEventsCount
+              )}}%
+            </b>
+          </template>
+          <template v-slot:item.ackNotInTimeEventsCount="{ item }">
+            {{Math.round(
+            (item.ackNotInTimeEventsCount * 100) / item.normalEventsCount
             )}}%
-          </b>
-        </template>
-        <template v-slot:item.ackNotInTimeEventsCount="{ item }">
-          {{Math.round(
-          (item.ackNotInTimeEventsCount * 100) / item.normalEventsCount
-          )}}%
-        </template>
-        <template v-slot:item.noAckEventsCount="{ item }">
-          {{Math.round(
-          (item.noAckEventsCount * 100) / item.normalEventsCount
-          )}}%
-        </template>
-      </v-data-table>
+          </template>
+          <template v-slot:item.noAckEventsCount="{ item }">
+            {{Math.round(
+            (item.noAckEventsCount * 100) / item.normalEventsCount
+            )}}%
+          </template>
+        </v-data-table>
+      </v-card>
     </v-container>
 
-    <v-container fluid>
-      <v-subheader
-        v-show="selected.showDetails"
-      >События по выбранному сотруднику - {{eventsCount()}}</v-subheader>
-      <!-- Таблица с событиями -->
-      <v-data-table
-        v-show="selected.showDetails"
-        :headers="eventHeaders"
-        :items="events"
-        no-data-text="Нет данных"
-        :loading="eventsLoading"
-        loading-text="Загружаем данные"
-      >
-        <template v-slot:no-data></template>
-        <template v-slot:item.tsStart="{ item }">{{msToDateString(item.tsStart)}}</template>
-        <template v-slot:item.tsAck="{ item }">{{msToDateString(item.tsAck)}}</template>
-        <template v-slot:item.tsEnd="{ item }">{{msToDateString(item.tsEnd)}}</template>
-        <template v-slot:item.freeDuration="{ item }">{{Math.round(item.freeDuration/60000)}}</template>
-      </v-data-table>
+    <!-- Панель с таблицей с событиями -->
+    <v-container fluid v-show="selected.isShowDetails">
+      <v-card>
+        <v-card-title>
+          События по выбранному сотруднику - {{eventsCount()}}
+          <v-spacer></v-spacer>
+          <v-btn-toggle v-model="ackTypeId" mandatory @change="showDetails">
+            <v-btn>
+              <v-icon>mdi-timer</v-icon>вовремя
+            </v-btn>
+            <v-btn>
+              <v-icon>mdi-timer-off</v-icon>с опозданием
+            </v-btn>
+            <v-btn>
+              <v-icon>mdi-close-octagon-outline</v-icon>не подтвердил
+            </v-btn>
+          </v-btn-toggle>
+        </v-card-title>
+        <!-- Таблица -->
+        <v-data-table
+          :headers="eventHeaders"
+          :items="events"
+          no-data-text="Нет данных"
+          :loading="eventsLoading"
+          loading-text="Загружаем данные"
+        >
+          <template v-slot:no-data></template>
+          <template v-slot:item.tsStart="{ item }">{{msToDateString(item.tsStart)}}</template>
+          <template v-slot:item.tsAck="{ item }">{{msToDateString(item.tsAck)}}</template>
+          <template v-slot:item.tsEnd="{ item }">{{msToDateString(item.tsEnd)}}</template>
+          <template v-slot:item.freeDuration="{ item }">{{Math.round(item.freeDuration/60000)}}</template>
+        </v-data-table>
+      </v-card>
     </v-container>
   </div>
 </template>
-
 
 <script>
 import {
@@ -119,7 +128,8 @@ export default {
           TS: this.focus.getTime().toString(),
           employeeId: this.selected.item[0]
             ? this.selected.item[0].employeeId
-            : ""
+            : "",
+          ackType: this.ackType
         };
       }
     },
@@ -131,17 +141,18 @@ export default {
         };
       }
     },
-    Employees: {
+    employees: {
       query: ALL_EMPLOYEES_QUERY
     }
   },
   data: () => ({
+    ackTypeId: 2,
     //Флаг показа подсказок
     show1: false,
     eventsLoading: false,
     scoringsRecalculating: false,
     focus: new Date(),
-    selected: { item: [], showDetails: false },
+    selected: { item: [], isShowDetails: false },
     scoringHeaders: [
       { text: "Сотрудник", value: "employeeId", align: "left" },
       { text: "Время реакции, мин", value: "freeDurationSum", align: "right" },
@@ -156,9 +167,13 @@ export default {
         align: "right"
       },
       { text: "Не подтвердил", value: "noAckEventsCount", align: "right" },
-      { text: "Всего событий", value: "normalEventsCount", align: "right" },
       {
-        text: "Слишком коротких событий",
+        text: "Событий длиннее 10 мин",
+        value: "normalEventsCount",
+        align: "right"
+      },
+      {
+        text: "Событий короче 10 мин",
         value: "tooShortEventsCount",
         align: "right"
       }
@@ -175,6 +190,14 @@ export default {
       { text: ":)", value: "isForgiven" }
     ]
   }),
+  computed: {
+    ackType() {
+      if (this.ackTypeId === 0) return "inTime";
+      if (this.ackTypeId === 1) return "late";
+      if (this.ackTypeId === 2) return "none";
+      return "none";
+    }
+  },
   watch: {
     events: function(val) {
       if (val.length > 0) {
@@ -200,7 +223,7 @@ export default {
       this.focus = new Date(this.focus.setMonth(month));
     },
     //Запускает пересчет показателей сотрудников за выбранный месяц
-    async calculateScorings() {
+    async updateScorings() {
       this.scorings = [];
       this.scoringsRecalculating = true;
       await this.$apollo.mutate({
@@ -213,7 +236,7 @@ export default {
     },
     //Показывает события за смены сотрудника
     showDetails(arg) {
-      this.selected.showDetails = arg.value;
+      if (typeof arg == "object") this.selected.isShowDetails = arg.value;
       this.eventsLoading = true;
       this.events = [];
       this.$apollo.queries.events.refetch();
@@ -221,10 +244,10 @@ export default {
     //По идентификатору возвращает имя сотрудника
     nameOfEmployee(employeeId) {
       let name = "";
-      if (this.Employees) {
-        if (this.Employees.length > 0) {
-          name = this.Employees[
-            this.Employees.findIndex(el => el.id === employeeId)
+      if (this.employees) {
+        if (this.employees.length > 0) {
+          name = this.employees[
+            this.employees.findIndex(el => el.id === employeeId)
           ].fullName;
         }
       }
