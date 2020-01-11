@@ -5,31 +5,24 @@
 
 <template>
   <div>
-    <!-- Панель навигации -->
-    <v-toolbar>
-      <!-- Кнопка "Сегодня" -->
-      <v-btn fab text small @click="setToday">
-        <v-icon>mdi-calendar-today</v-icon>
-      </v-btn>
-      <!-- Кнопка "Назад" -->
-      <v-btn fab text small @click="prev">
-        <v-icon>mdi-chevron-left</v-icon>
-      </v-btn>
-      <!-- Текущие год и месяц -->
-      <v-toolbar-title>{{focus.toISOString().slice(0,7)}}</v-toolbar-title>
-      <!--Кнопка "Вперед" -->
-      <v-btn fab text small @click="next">
-        <v-icon>mdi-chevron-right</v-icon>
-      </v-btn>
-      <!--место для отладки
-      <h3>{{this.parsedScorings}}</h3>-->
-    </v-toolbar>
-
     <!-- Таблица с показателями сотрудников -->
     <v-container fluid>
       <v-card>
         <v-card-title>
-          Показатели сотрудников
+          <!-- Кнопка "Сегодня" -->
+          <v-btn fab text small @click="setToday">
+            <v-icon>mdi-calendar-today</v-icon>
+          </v-btn>
+          <!-- Кнопка "Назад" -->
+          <v-btn fab text small @click="prev">
+            <v-icon>mdi-chevron-left</v-icon>
+          </v-btn>
+          <!-- Текущие год и месяц -->
+          <v-toolbar-title>{{focus.toISOString().slice(0,7)}}</v-toolbar-title>
+          <!--Кнопка "Вперед" -->
+          <v-btn fab text small @click="next">
+            <v-icon>mdi-chevron-right</v-icon>
+          </v-btn>
           <v-spacer></v-spacer>
           <!-- Кнопка "Пересчитать показатели сотрудников" -->
           <v-tooltip v-model="show1" left>
@@ -123,7 +116,7 @@ import {
   ALL_EVENTS_QUERY,
   ALL_SCORINGS_QUERY,
   CALCULATE_SCORINGS,
-  ALL_EMPLOYEES_QUERY
+  EMPLOYEES_QUERY
 } from "@/queries/queries.js";
 
 export default {
@@ -149,7 +142,12 @@ export default {
       }
     },
     employees: {
-      query: ALL_EMPLOYEES_QUERY
+      query: EMPLOYEES_QUERY,
+      variables() {
+        return {
+          type: "all"
+        };
+      }
     }
   },
   data: () => ({

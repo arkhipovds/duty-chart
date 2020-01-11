@@ -1,65 +1,67 @@
 
 <!-- TODO:
 показывать в статистике расшифровку каждой суммы - если это нужно...
-перенести элементы управления в в-кард
  -->
 <template>
   <div>
-    <!-- Панель навигации по календарю -->
-    <v-toolbar>
-      <!-- Кнопка "Сегодня" -->
-      <v-btn fab text small @click="setToday">
-        <v-icon>mdi-calendar-today</v-icon>
-      </v-btn>
-      <!-- Кнопка "Назад" -->
-      <v-btn fab text small @click="prev">
-        <v-icon>mdi-chevron-left</v-icon>
-      </v-btn>
-      <!-- Текущие год и месяц -->
-      <v-toolbar-title>{{focus.slice(0,7)}}</v-toolbar-title>
-      <!-- Кнопка "Вперед" -->
-      <v-btn fab text small @click="next">
-        <v-icon>mdi-chevron-right</v-icon>
-      </v-btn>
-      <!-- Переключатель формата календаря месяц/неделя-->
-      <v-btn fab text small @click="changeCalendarType">
-        <v-icon>{{typeToLabel[type]}}</v-icon>
-      </v-btn>
-      <v-spacer></v-spacer>
-      <!-- Кнопка "Пересчитать показатели сотрудников" -->
-      <v-tooltip v-model="show1" bottom>
-        <template v-slot:activator="{ on }">
-          <v-btn fab small text v-on="on" @click="updateScorings" :loading="scoringsRecalculating">
-            <v-icon>mdi-refresh</v-icon>
-          </v-btn>
-        </template>
-        <span>Пересчитать показатели сотрудников</span>
-      </v-tooltip>
-      <!-- Кнопка "Добавить смену" -->
-      <v-tooltip v-model="show2" bottom>
-        <template v-slot:activator="{ on }">
-          <v-btn fab small text v-on="on" @click="dialogShift.isNew=true,openShiftDialog({})">
-            <v-icon>mdi-plus-one</v-icon>
-          </v-btn>
-        </template>
-        <span>Добавить смену</span>
-      </v-tooltip>
-      <!-- Кнопка "Заполнить график до конца месяца" -->
-      <v-tooltip v-model="show3" bottom>
-        <template v-slot:activator="{ on }">
-          <v-btn fab small text v-on="on" @click="dialogFillMonthOpen()">
-            <v-icon>mdi-playlist-plus</v-icon>
-          </v-btn>
-        </template>
-        <span>Заполнить график до конца месяца</span>
-      </v-tooltip>
-    </v-toolbar>
-    <!-- Место для отладки  TODO удалить
-    <h3>{{ dialogShift.panel }} ---</h3>-->
-
     <!-- Календарь -->
     <v-container fluid>
       <v-card>
+        <v-card-title>
+          <!-- Кнопка "Сегодня" -->
+          <v-btn fab text small @click="setToday">
+            <v-icon>mdi-calendar-today</v-icon>
+          </v-btn>
+          <!-- Кнопка "Назад" -->
+          <v-btn fab text small @click="prev">
+            <v-icon>mdi-chevron-left</v-icon>
+          </v-btn>
+          <!-- Текущие год и месяц -->
+          <v-toolbar-title>{{focus.slice(0,7)}}</v-toolbar-title>
+          <!-- Кнопка "Вперед" -->
+          <v-btn fab text small @click="next">
+            <v-icon>mdi-chevron-right</v-icon>
+          </v-btn>
+          <v-spacer></v-spacer>
+          <!-- Кнопка "Пересчитать показатели сотрудников" -->
+          <v-tooltip v-model="show1" bottom>
+            <template v-slot:activator="{ on }">
+              <v-btn
+                fab
+                small
+                text
+                v-on="on"
+                @click="updateScorings"
+                :loading="scoringsRecalculating"
+              >
+                <v-icon>mdi-refresh</v-icon>
+              </v-btn>
+            </template>
+            <span>Пересчитать показатели сотрудников</span>
+          </v-tooltip>
+          <!-- Кнопка "Добавить смену" -->
+          <v-tooltip v-model="show2" bottom>
+            <template v-slot:activator="{ on }">
+              <v-btn fab small text v-on="on" @click="dialogShift.isNew=true,openShiftDialog({})">
+                <v-icon>mdi-plus-one</v-icon>
+              </v-btn>
+            </template>
+            <span>Добавить смену</span>
+          </v-tooltip>
+          <!-- Кнопка "Заполнить график до конца месяца" -->
+          <v-tooltip v-model="show3" bottom>
+            <template v-slot:activator="{ on }">
+              <v-btn fab small text v-on="on" @click="dialogFillMonthOpen()">
+                <v-icon>mdi-playlist-plus</v-icon>
+              </v-btn>
+            </template>
+            <span>Заполнить график до конца месяца</span>
+          </v-tooltip>
+          <!-- Переключатель формата календаря месяц/неделя-->
+          <v-btn fab text small @click="changeCalendarType">
+            <v-icon>{{typeToLabel[type]}}</v-icon>
+          </v-btn>
+        </v-card-title>
         <v-calendar
           ref="calendar"
           v-model="focus"
@@ -319,8 +321,7 @@ import {
   ADD_SHIFT_MUTATION,
   UPDATE_SHIFT_MUTATION,
   DELETE_SHIFT_MUTATION,
-  ALL_EMPLOYEES_QUERY,
-  ACTIVE_EMPLOYEES_QUERY
+  EMPLOYEES_QUERY
 } from "@/queries/queries.js";
 
 export default {
@@ -335,10 +336,12 @@ export default {
       }
     },
     employees: {
-      query: ALL_EMPLOYEES_QUERY
-    },
-    activeEmployees: {
-      query: ACTIVE_EMPLOYEES_QUERY
+      query: EMPLOYEES_QUERY,
+      variables() {
+        return {
+          type: "all"
+        };
+      }
     }
   },
   //Данные для интерфейса
@@ -410,6 +413,15 @@ export default {
     };
   },
   computed: {
+    activeEmployees() {
+      let newArray = [];
+      if (this.employees) {
+        for (let item of this.employees) {
+          if (item.isActive) newArray.push(item);
+        }
+      }
+      return newArray;
+    },
     calendarFocus() {
       return this.focus
         ? new Date(this.focus).getTime().toString()

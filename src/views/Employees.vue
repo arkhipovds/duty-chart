@@ -1,69 +1,51 @@
-<!-- TODO: Добавить отображение удаленных сотрудников
- -->
-
 <template>
   <div>
-    <!-- Панель управления таблицей -->
-    <v-toolbar>
-      <!-- Строка поиска -->
-      <v-col cols="3">
-        <v-text-field
-          v-model="searchTerm"
-          prepend-icon="mdi-account-search"
-          label="Поиск"
-          full-width
-          hide-details
-          clearable
-        ></v-text-field>
-      </v-col>
-      <v-spacer></v-spacer>
-      <!-- Кнопка "Добавить сотрудника" -->
-      <v-tooltip v-model="show1" bottom>
-        <template v-slot:activator="{ on }">
-          <v-btn fab small text v-on="on" @click="employeeDialog.show=true">
-            <v-icon>mdi-account-plus</v-icon>
-          </v-btn>
-        </template>
-        <span>Добавить сотрудника</span>
-      </v-tooltip>
-    </v-toolbar>
-
     <!-- Таблица с сотрудниками -->
     <v-container fluid>
       <v-card>
+        <v-card-title>
+          <!-- TODO место для отладки - удалить 
+          {{employeesType}}-->
+          <v-switch
+            v-model="employeesType"
+            label="показывать уволенных"
+            false-value="active"
+            true-value="all"
+          ></v-switch>
+          <v-spacer></v-spacer>
+          <!-- Кнопка "Добавить сотрудника" -->
+          <v-tooltip v-model="show1" bottom>
+            <template v-slot:activator="{ on }">
+              <v-btn fab small text v-on="on" @click="employeeDialog.show=true">
+                <v-icon>mdi-account-plus</v-icon>
+              </v-btn>
+            </template>
+            <span>Добавить сотрудника</span>
+          </v-tooltip>
+        </v-card-title>
         <v-data-table
           :headers="headers"
-          :items="activeEmployees"
+          :items="employees"
           item-key="id"
           max-width="600px"
           hide-default-footer
           class="elevation-1"
-          :search="searchTerm"
           :loading="loading"
           loading-text="Загрузка данных ... подождите!"
         >
-          <!-- Показываем цвет -->
-          <template v-slot:item.visibleColor="{ item }">
-            <v-chip :color="item.visibleColor"></v-chip>
-          </template>
-          <!-- Признак "дежурный" -->
-          <template v-slot:item.isRegular="{ item }">
-            <v-chip v-if="item.isRegular">
-              <v-icon>mdi-check</v-icon>
-            </v-chip>
+          <!-- Фамилия сотрудника -->
+          <template v-slot:item.fullName="{ item }">
+            <v-icon v-if="item.isActive" :color="item.visibleColor">mdi-account</v-icon>
+            <v-icon v-if="!item.isActive" color="#bbbbbb">mdi-account-off</v-icon>&nbsp;
+            <font v-if="!item.isActive" color="#bbbbbb">{{item.fullName}}</font>
+            <template v-if="item.isActive">{{item.fullName}}</template>
+            &nbsp;
+            <v-icon v-if="item.isRegular" color="#bbbbbb" small>mdi-calendar-clock</v-icon>
           </template>
           <!-- Действия -->
           <template v-slot:item.action="{ item }">
             <v-icon class="mr-2" @click="openEmployeeDialog(item)">mdi-pencil</v-icon>
             <v-icon @click="deleteEmployee(item)">mdi-delete</v-icon>
-          </template>
-          <!--если нет данных при поиске -->
-          <template v-slot:no-results>
-            <v-alert
-              :value="true"
-              color="orange"
-              icon="mdi-linux"
-            >По фразе "{{ searchTerm }}" ничего не найдено.</v-alert>
           </template>
         </v-data-table>
       </v-card>
@@ -121,7 +103,7 @@
 <script>
 // Import queries from queries.js
 import {
-  ACTIVE_EMPLOYEES_QUERY,
+  EMPLOYEES_QUERY,
   ADD_EMPLOYEE_MUTATION,
   UPDATE_EMPLOYEE_MUTATION,
   DELETE_EMPLOYEE_MUTATION
@@ -130,6 +112,8 @@ import {
 export default {
   data() {
     return {
+      //тест
+      employeesType: "active",
       //Флаг показа подсказок
       show1: false,
       //Структура для всплывашки
@@ -148,36 +132,23 @@ export default {
         isRegular: false,
         visibleColor: ""
       },
-      //Поисковый запрос
-      searchTerm: "",
       //Заголовки для таблицы
       headers: [
         {
-          text: "ФИО",
+          text: "Фамилия",
           align: "left",
           sortable: true,
           value: "fullName"
         },
         {
-          text: "Логин в домене",
+          text: "Логин",
           align: "right",
           sortable: true,
           value: "ADLogin"
         },
+
         {
-          text: "Цвет",
-          align: "right",
-          sortable: false,
-          value: "visibleColor"
-        },
-        {
-          text: "Дежурный",
-          align: "right",
-          sortable: true,
-          value: "isRegular"
-        },
-        {
-          text: "",
+          text: "Действия",
           align: "right",
           value: "action",
           sortable: false
@@ -187,14 +158,19 @@ export default {
   },
   apollo: {
     //Закачивает в массив данные с бэкенда
-    activeEmployees: {
-      query: ACTIVE_EMPLOYEES_QUERY
+    employees: {
+      query: EMPLOYEES_QUERY,
+      variables() {
+        return {
+          type: this.employeesType
+        };
+      }
     }
   },
   computed: {
     //Возвращает статус загрузки данных с бэкенда
     loading() {
-      if (this.activeEmployees) {
+      if (this.employees) {
         return false;
       } else {
         return true;
@@ -228,7 +204,12 @@ export default {
         },
         refetchQueries: [
           {
-            query: ACTIVE_EMPLOYEES_QUERY
+            query: EMPLOYEES_QUERY,
+            variables() {
+              return {
+                type: this.employeesType
+              };
+            }
           }
         ]
       });
@@ -246,7 +227,12 @@ export default {
         },
         refetchQueries: [
           {
-            query: ACTIVE_EMPLOYEES_QUERY
+            query: EMPLOYEES_QUERY,
+            variables() {
+              return {
+                type: this.employeesType
+              };
+            }
           }
         ]
       });
@@ -261,7 +247,12 @@ export default {
           },
           refetchQueries: [
             {
-              query: ACTIVE_EMPLOYEES_QUERY
+              query: EMPLOYEES_QUERY,
+              variables() {
+                return {
+                  type: this.employeesType
+                };
+              }
             }
           ]
         });

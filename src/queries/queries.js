@@ -69,26 +69,15 @@ export const DELETE_SHIFT_MUTATION = gql`
 `;
 
 //Запрос списка всех сотрудников
-export const ALL_EMPLOYEES_QUERY = gql`
-  query employees {
-    employees {
+export const EMPLOYEES_QUERY = gql`
+  query employees($type: String) {
+    employees(type: $type) {
       id
       fullName
       ADLogin
       isRegular
       visibleColor
-    }
-  }
-`;
-//Запрос списка активных сотрудников
-export const ACTIVE_EMPLOYEES_QUERY = gql`
-  query employees {
-    activeEmployees {
-      id
-      fullName
-      ADLogin
-      isRegular
-      visibleColor
+      isActive
     }
   }
 `;
