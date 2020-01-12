@@ -1,11 +1,10 @@
 <!-- TODO:
-перенести расчеты в бекенд, там же сделать выдачу медалей, убрать мапинг массива
-при пересчете показателей скрывать детализацию
+реализовать механизм прощения :))
  -->
 
 <template>
   <div>
-    <!-- Таблица с показателями сотрудников -->
+    <!-- Панель с показателями сотрудников -->
     <v-container fluid>
       <v-card>
         <v-card-title>
@@ -41,10 +40,11 @@
             <span>Пересчитать показатели сотрудников</span>
           </v-tooltip>
         </v-card-title>
+        <!-- Таблица с показателями сотрудников -->
         <v-data-table
           v-model="selected.item"
           :headers="scoringHeaders"
-          :items="parsedScorings"
+          :items="scorings"
           item-key="id"
           :single-select="true"
           show-select
@@ -54,9 +54,11 @@
           :loading="this.$apollo.queries.scorings.loading"
           loading-text="Загружаем данные"
         >
-          <template v-slot:item.employeeName="{ item }">
-            {{item.employeeName}}
-            <v-icon v-for="(item2,i) in item.icons" :key="`item.icons${i}`" small>{{item2}}</v-icon>
+          <template v-slot:item.employeeFullName="{ item }">
+            {{item.employeeFullName}}
+            <v-icon v-if="item.doneNorm" small>mdi-check</v-icon>
+            <v-icon v-if="item.theBest" small>mdi-trophy</v-icon>
+            <v-icon v-if="item.theQuickest" small>mdi-flash</v-icon>
           </template>
           <template v-slot:item.percentAckInTime="{ item }">
             <b>{{item.percentAckInTime}}%</b>
@@ -67,7 +69,7 @@
       </v-card>
     </v-container>
 
-    <!-- Панель с таблицей с событиями -->
+    <!-- Панель с событиями -->
     <v-container fluid v-show="selected.isShowDetails">
       <v-card>
         <v-card-title>
@@ -85,7 +87,7 @@
             </v-btn>
           </v-btn-toggle>
         </v-card-title>
-        <!-- Таблица -->
+        <!-- Таблица с событиями -->
         <v-data-table
           :headers="eventHeaders"
           :items="events"
@@ -159,7 +161,7 @@ export default {
     focus: new Date(),
     selected: { item: [], isShowDetails: false },
     scoringHeaders: [
-      { text: "Сотрудник", value: "employeeName", align: "left" },
+      { text: "Сотрудник", value: "employeeFullName", align: "left" },
       { text: "Время реакции, мин", value: "avgAckTime", align: "right" },
       {
         text: "Подтвердил вовремя",
@@ -191,8 +193,8 @@ export default {
       { text: "Описание", value: "text" },
       { text: "Хост", value: "host" },
       { text: "Критичность", value: "severity" },
-      { text: "Время без подтверждения, мин", value: "freeDuration" },
-      { text: ":)", value: "isForgiven" }
+      { text: "Время без подтверждения, мин", value: "freeDuration" }
+      //  { text: ":)", value: "isForgiven" }
     ]
   }),
   computed: {
@@ -201,64 +203,6 @@ export default {
       if (this.selectedAckTypeId === 1) return "late";
       if (this.selectedAckTypeId === 2) return "none";
       return "none";
-    },
-    parsedScorings() {
-      let newScorings = [];
-      //Если массивы уже заполнены
-      if (this.scorings && this.employees) {
-        newScorings = this.scorings.slice();
-        for (let i in newScorings) {
-          newScorings[i].icons = [];
-          //Имя сотрудника
-          newScorings[i].employeeName = this.nameOfEmployee(
-            newScorings[i].employeeId
-          );
-          if (newScorings[i].normalEventsCount > 0) {
-            //среднее время подтверждения
-            newScorings[i].avgAckTime =
-              Math.round(
-                (100 * newScorings[i].freeDurationSum) /
-                  (newScorings[i].normalEventsCount * 60000)
-              ) / 100;
-            //% вовремя подтвержденных
-            newScorings[i].percentAckInTime = Math.round(
-              (newScorings[i].ackInTimeEventsCount * 100) /
-                newScorings[i].normalEventsCount
-            );
-            //% невовремя подтвержденных
-            newScorings[i].percentAckNotInTime = Math.round(
-              (newScorings[i].ackNotInTimeEventsCount * 100) /
-                newScorings[i].normalEventsCount
-            );
-            //% неподтвержденных
-            newScorings[i].percentNoAck = Math.round(
-              (newScorings[i].noAckEventsCount * 100) /
-                newScorings[i].normalEventsCount
-            );
-          } else {
-            newScorings[i].avgAckTime = 0;
-            newScorings[i].percentAckInTime = 0;
-            newScorings[i].percentAckNotInTime = 0;
-            newScorings[i].percentNoAck = 0;
-          }
-        }
-        var theQuickest = { item: newScorings[0], index: 0 };
-        var theBest = { item: newScorings[0], index: 0 };
-        for (let i in newScorings) {
-          if (newScorings[i].avgAckTime > 0)
-            if (newScorings[i].avgAckTime < theQuickest.item.avgAckTime)
-              theQuickest = { item: newScorings[i], index: i };
-          if (newScorings[i].percentAckInTime > theBest.item.percentAckInTime)
-            theBest = { item: newScorings[i], index: i };
-          if (newScorings[i].percentAckInTime > 94)
-            newScorings[i].icons.push("mdi-check");
-        }
-        if (newScorings.length > 0) {
-          newScorings[theQuickest.index].icons.push("mdi-flash");
-          newScorings[theBest.index].icons.push("mdi-trophy");
-        }
-      }
-      return newScorings;
     }
   },
   watch: {
@@ -289,6 +233,8 @@ export default {
     //Запускает пересчет показателей сотрудников за выбранный месяц
     async updateScorings() {
       this.scorings = [];
+      this.selected.isShowDetails = false;
+      this.selected.item = [];
       this.scoringsRecalculating = true;
       await this.$apollo.mutate({
         mutation: CALCULATE_SCORINGS,
@@ -303,18 +249,6 @@ export default {
       if (typeof arg == "object") this.selected.isShowDetails = arg.value;
       this.events = [];
       await this.$apollo.queries.events.refetch();
-    },
-    //По идентификатору возвращает имя сотрудника
-    nameOfEmployee(employeeId) {
-      let name = "";
-      if (this.employees) {
-        if (this.employees.length > 0) {
-          name = this.employees[
-            this.employees.findIndex(el => el.id === employeeId)
-          ].fullName;
-        }
-      }
-      return name;
     },
     //Преобразовывает UNIX-time (в мс) в строку в формате "YYYY-MM-DD HH:MM"
     msToDateString(ms) {

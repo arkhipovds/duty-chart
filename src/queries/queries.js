@@ -139,12 +139,16 @@ export const ALL_SCORINGS_QUERY = gql`
     scorings(TS: $TS) {
       id
       employeeId
-      ackInTimeEventsCount
-      ackNotInTimeEventsCount
-      noAckEventsCount
+      employeeFullName
       tooShortEventsCount
       normalEventsCount
-      freeDurationSum
+      avgAckTime
+      percentAckInTime
+      percentAckNotInTime
+      percentNoAck
+      theQuickest
+      theBest
+      doneNorm
     }
   }
 `;

@@ -4,8 +4,6 @@
     <v-container fluid>
       <v-card>
         <v-card-title>
-          <!-- TODO место для отладки - удалить 
-          {{employeesType}}-->
           <v-switch
             v-model="employeesType"
             label="показывать уволенных"
