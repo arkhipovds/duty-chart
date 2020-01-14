@@ -48,8 +48,8 @@ export default {
         },
         {
           icon: "mdi-trending-up",
-          title: "Эффективность",
-          route: "/efficiency"
+          title: "Показатели",
+          route: "/scorings"
         } /*
                     {
                         icon: 'mdi-login',

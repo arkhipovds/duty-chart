@@ -16,7 +16,7 @@ export const ALL_EVENTS_QUERY = gql`
     }
   }
 `;
-//Запрос на расчет показателей за месяц
+//Расчет показателей за месяц
 export const CALCULATE_SCORINGS = gql`
   mutation($TS: String!) {
     updateScorings(TS: $TS)
@@ -39,7 +39,7 @@ export const ALL_SHIFTS_QUERY = gql`
     }
   }
 `;
-//Запрос на добавление смены
+//Добавление смены
 export const ADD_SHIFT_MUTATION = gql`
   mutation($start: String!, $end: String!, $employeeId: String!) {
     addShift(start: $start, end: $end, employeeId: $employeeId) {
@@ -50,7 +50,7 @@ export const ADD_SHIFT_MUTATION = gql`
     }
   }
 `;
-//Запрос на обновление данных по смене
+//Обновление данных по смене
 export const UPDATE_SHIFT_MUTATION = gql`
   mutation($id: String!, $start: String!, $end: String!, $employeeId: String!) {
     updateShift(id: $id, start: $start, end: $end, employeeId: $employeeId) {
@@ -61,7 +61,7 @@ export const UPDATE_SHIFT_MUTATION = gql`
     }
   }
 `;
-//Запрос на удаление смены
+//Удаление смены
 export const DELETE_SHIFT_MUTATION = gql`
   mutation($id: String) {
     deleteShift(id: $id)
@@ -81,7 +81,7 @@ export const EMPLOYEES_QUERY = gql`
     }
   }
 `;
-//Запрос на добавление сотрудника
+//Добавление сотрудника
 export const ADD_EMPLOYEE_MUTATION = gql`
   mutation(
     $fullName: String!
@@ -103,7 +103,7 @@ export const ADD_EMPLOYEE_MUTATION = gql`
     }
   }
 `;
-//Запрос на обновление данных по сотруднику
+//Обновление данных сотрудника
 export const UPDATE_EMPLOYEE_MUTATION = gql`
   mutation(
     $id: String!
@@ -127,10 +127,16 @@ export const UPDATE_EMPLOYEE_MUTATION = gql`
     }
   }
 `;
-//Запрос на удаление сотрудника
+//Удаление сотрудника
 export const DELETE_EMPLOYEE_MUTATION = gql`
   mutation($id: String) {
     deleteEmployee(id: $id)
+  }
+`;
+//Восстановление сотрудника
+export const RESTORE_EMPLOYEE_MUTATION = gql`
+  mutation($id: String) {
+    restoreEmployee(id: $id)
   }
 `;
 //Запрос оценок

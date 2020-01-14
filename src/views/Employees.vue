@@ -1,3 +1,5 @@
+ <!-- TODO   -->
+
 <template>
   <div>
     <!-- Таблица с сотрудниками -->
@@ -43,7 +45,8 @@
           <!-- Действия -->
           <template v-slot:item.action="{ item }">
             <v-icon class="mr-2" @click="openEmployeeDialog(item)">mdi-pencil</v-icon>
-            <v-icon @click="deleteEmployee(item)">mdi-delete</v-icon>
+            <v-icon v-if="item.isActive" @click="deleteEmployee(item)">mdi-delete</v-icon>
+            <v-icon v-if="!item.isActive" @click="restoreEmployee(item)">mdi-restore</v-icon>
           </template>
         </v-data-table>
       </v-card>
@@ -104,7 +107,8 @@ import {
   EMPLOYEES_QUERY,
   ADD_EMPLOYEE_MUTATION,
   UPDATE_EMPLOYEE_MUTATION,
-  DELETE_EMPLOYEE_MUTATION
+  DELETE_EMPLOYEE_MUTATION,
+  RESTORE_EMPLOYEE_MUTATION
 } from "@/queries/queries.js";
 
 export default {
@@ -191,30 +195,21 @@ export default {
       this.employeeDialog.visibleColor = "";
     },
     //Добавляет учетную запись в БД
-    addEmployee() {
-      this.$apollo.mutate({
+    async addEmployee() {
+      await this.$apollo.mutate({
         mutation: ADD_EMPLOYEE_MUTATION,
         variables: {
           fullName: this.employeeDialog.fullName,
           ADLogin: this.employeeDialog.ADLogin,
           isRegular: this.employeeDialog.isRegular,
           visibleColor: this.employeeDialog.visibleColor
-        },
-        refetchQueries: [
-          {
-            query: EMPLOYEES_QUERY,
-            variables() {
-              return {
-                type: this.employeesType
-              };
-            }
-          }
-        ]
+        }
       });
+      await this.$apollo.queries.employees.refetch();
     },
     //Обновляет данные учетной записи в БД
-    updateEmployee() {
-      this.$apollo.mutate({
+    async updateEmployee() {
+      await this.$apollo.mutate({
         mutation: UPDATE_EMPLOYEE_MUTATION,
         variables: {
           id: this.employeeDialog.id,
@@ -222,42 +217,37 @@ export default {
           ADLogin: this.employeeDialog.ADLogin,
           isRegular: this.employeeDialog.isRegular,
           visibleColor: this.employeeDialog.visibleColor
-        },
-        refetchQueries: [
-          {
-            query: EMPLOYEES_QUERY,
-            variables() {
-              return {
-                type: this.employeesType
-              };
-            }
-          }
-        ]
+        }
       });
+      await this.$apollo.queries.employees.refetch();
     },
-    //Удаляет учетную запись из БД
-    deleteEmployee(input) {
+    //Удаляет учетную запись сотрудника
+    async deleteEmployee(input) {
       if (confirm("Точно удалить запись?")) {
-        this.$apollo.mutate({
+        await this.$apollo.mutate({
           mutation: DELETE_EMPLOYEE_MUTATION,
           variables: {
             id: input.id
-          },
-          refetchQueries: [
-            {
-              query: EMPLOYEES_QUERY,
-              variables() {
-                return {
-                  type: this.employeesType
-                };
-              }
-            }
-          ]
+          }
         });
+        await this.$apollo.queries.employees.refetch();
         this.snackbar.text = `Удалена учетная запись '${this.employeeDialog.fullName}'`;
         this.snackbar.color = "red";
         this.snackbar.show = true;
       }
+    },
+    //Восстанавливает учетную запись сотрудника
+    async restoreEmployee(input) {
+      await this.$apollo.mutate({
+        mutation: RESTORE_EMPLOYEE_MUTATION,
+        variables: {
+          id: input.id
+        }
+      });
+      await this.$apollo.queries.employees.refetch();
+      this.snackbar.text = `Восстановлена учетная запись '${this.employeeDialog.fullName}'`;
+      this.snackbar.color = "green";
+      this.snackbar.show = true;
     },
     //Открывает диалог с карточкой сотрудника
     openEmployeeDialog(input) {
