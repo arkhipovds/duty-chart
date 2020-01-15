@@ -1,4 +1,4 @@
- <!-- TODO   -->
+ <!-- TODO -->
 
 <template>
   <div>
@@ -40,7 +40,12 @@
             <font v-if="!item.isActive" color="#bbbbbb">{{item.fullName}}</font>
             <template v-if="item.isActive">{{item.fullName}}</template>
             &nbsp;
-            <v-icon v-if="item.isRegular" color="#bbbbbb" small>mdi-calendar-clock</v-icon>
+            <v-icon
+              v-if="item.isRegular"
+              color="#bbbbbb"
+              small
+              title="штатный дежурный"
+            >mdi-calendar-clock</v-icon>
           </template>
           <!-- Действия -->
           <template v-slot:item.action="{ item }">

@@ -1,5 +1,5 @@
 <!-- TODO:
-реализовать механизм прощения :))
+реализовать механизм "прощения" :))
 показывать предупреждение, если есть неучтенные в оценке смены
  -->
 
@@ -77,14 +77,23 @@
           События по выбранному сотруднику
           <v-spacer></v-spacer>
           <v-btn-toggle v-model="selectedAckTypeId" mandatory @change="showDetails">
-            <v-btn>
-              <v-icon>mdi-alarm-check</v-icon>вовремя
+            <v-btn title="подтвердил вовремя">
+              <v-icon>mdi-alarm-check</v-icon>
             </v-btn>
-            <v-btn>
-              <v-icon>mdi-timer-off</v-icon>с опозданием
+            <v-btn title="подтвердил поздно">
+              <v-icon>mdi-timer-off</v-icon>
             </v-btn>
-            <v-btn>
-              <v-icon>mdi-close-octagon-outline</v-icon>не подтвердил
+            <v-btn title="не подтвердил">
+              <v-icon>mdi-sleep</v-icon>
+            </v-btn>
+            <v-btn title="события во время обслуживания">
+              <v-icon>mdi-wrench</v-icon>
+            </v-btn>
+            <v-btn title="руководитель сделал исключение">
+              <v-icon>mdi-account-edit</v-icon>
+            </v-btn>
+            <v-btn title="события короче 10 минут">
+              <v-icon>mdi-clock-fast</v-icon>
             </v-btn>
           </v-btn-toggle>
         </v-card-title>
@@ -203,6 +212,9 @@ export default {
       if (this.selectedAckTypeId === 0) return "inTime";
       if (this.selectedAckTypeId === 1) return "late";
       if (this.selectedAckTypeId === 2) return "none";
+      if (this.selectedAckTypeId === 3) return "maintenance";
+      if (this.selectedAckTypeId === 4) return "forgiven";
+      if (this.selectedAckTypeId === 5) return "tooShort";
       return "none";
     }
   },
