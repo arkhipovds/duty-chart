@@ -10,6 +10,7 @@
   "dependencies": {
     "apollo-boost": "^0.4.4",
     "core-js": "^2.6.5",
+    "css-loader": "^3.4.2",
     "graphql": "^14.5.8",
     "vue": "^2.6.10",
     "vue-apollo": "^3.0.0-rc.6",
@@ -17,6 +18,7 @@
     "vuetify": "^2.0.0"
   },
   "devDependencies": {
+    "@mdi/font": "^4.7.95",
     "@vue/cli-plugin-babel": "^3.11.0",
     "@vue/cli-plugin-eslint": "^3.11.0",
     "@vue/cli-service": "^3.11.0",

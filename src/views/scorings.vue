@@ -18,7 +18,9 @@
             <v-icon>mdi-chevron-left</v-icon>
           </v-btn>
           <!-- Текущие год и месяц -->
-          <v-toolbar-title>{{focus.toISOString().slice(0,7)}}</v-toolbar-title>
+          <v-toolbar-title>{{
+            focus.toISOString().slice(0, 7)
+          }}</v-toolbar-title>
           <!--Кнопка "Вперед" -->
           <v-btn fab text small @click="next">
             <v-icon>mdi-chevron-right</v-icon>
@@ -56,16 +58,32 @@
           loading-text="Загружаем данные"
         >
           <template v-slot:item.employeeFullName="{ item }">
-            {{item.employeeFullName}}
-            <v-icon v-if="item.doneNorm" small>mdi-check</v-icon>
-            <v-icon v-if="item.theBest" small>mdi-trophy</v-icon>
-            <v-icon v-if="item.theQuickest" small>mdi-flash</v-icon>
+            <v-icon
+              v-if="!item.isRelevant"
+              small
+              title="Показатели устарели, пересчитайте"
+              >mdi-restore</v-icon
+            >
+            {{ item.employeeFullName }}
+            <v-icon v-if="item.doneNorm" small title="Норма выполнена"
+              >mdi-check</v-icon
+            >
+            <v-icon v-if="item.theBest" small title="Лучшие показатели"
+              >mdi-trophy</v-icon
+            >
+            <v-icon v-if="item.theQuickest" small title="Самый быстрый"
+              >mdi-flash</v-icon
+            >
           </template>
           <template v-slot:item.percentAckInTime="{ item }">
-            <b>{{item.percentAckInTime}}%</b>
+            <b>{{ item.percentAckInTime }}%</b>
           </template>
-          <template v-slot:item.percentAckNotInTime="{ item }">{{item.percentAckNotInTime}}%</template>
-          <template v-slot:item.percentNoAck="{ item }">{{item.percentNoAck}}%</template>
+          <template v-slot:item.percentAckNotInTime="{ item }"
+            >{{ item.percentAckNotInTime }}%</template
+          >
+          <template v-slot:item.percentNoAck="{ item }"
+            >{{ item.percentNoAck }}%</template
+          >
         </v-data-table>
       </v-card>
     </v-container>
@@ -76,7 +94,8 @@
         <v-card-title>
           События по выбранному сотруднику
           <v-spacer></v-spacer>
-          <v-btn-toggle v-model="selectedAckTypeId" mandatory @change="showDetails">
+          <!-- Фильтр с типами событий -->
+          <v-btn-toggle v-model="selectedAckTypeId" @change="showDetails">
             <v-btn title="подтвердил вовремя">
               <v-icon>mdi-alarm-check</v-icon>
             </v-btn>
@@ -108,14 +127,22 @@
           dense
           :items-per-page="eventsPerPage"
         >
-          <template v-slot:item.tsStart="{ item }">{{msToDateString(item.tsStart)}}</template>
-          <template v-slot:item.tsAck="{ item }">{{msToDateString(item.tsAck)}}</template>
-          <template v-slot:item.tsEnd="{ item }">{{msToDateString(item.tsEnd)}}</template>
-          <template v-slot:item.freeDuration="{ item }">{{Math.round(item.freeDuration/60000)}}</template>
+          <template v-slot:item.tsStart="{ item }">{{
+            msToDateString(item.tsStart)
+          }}</template>
+          <template v-slot:item.tsAck="{ item }">{{
+            msToDateString(item.tsAck)
+          }}</template>
+          <template v-slot:item.tsEnd="{ item }">{{
+            msToDateString(item.tsEnd)
+          }}</template>
+          <template v-slot:item.freeDuration="{ item }">{{
+            Math.round(item.freeDuration / 60000)
+          }}</template>
           <template v-slot:item.severity="{ item }">
-            <v-chip
-              :color="severityNumberToColor(item.severity)"
-            >{{severityNumberToName(item.severity)}}</v-chip>
+            <v-chip :color="severityNumberToColor(item.severity)">{{
+              severityNumberToName(item.severity)
+            }}</v-chip>
           </template>
         </v-data-table>
       </v-card>
@@ -215,7 +242,7 @@ export default {
       if (this.selectedAckTypeId === 3) return "maintenance";
       if (this.selectedAckTypeId === 4) return "forgiven";
       if (this.selectedAckTypeId === 5) return "tooShort";
-      return "none";
+      return "";
     }
   },
   watch: {

@@ -155,6 +155,7 @@ export const ALL_SCORINGS_QUERY = gql`
       theQuickest
       theBest
       doneNorm
+      isRelevant
     }
   }
 `;
