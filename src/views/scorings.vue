@@ -119,8 +119,8 @@
         <v-data-table
           :headers="eventHeaders"
           :items="events"
-          no-data-text="Нет данных"
-          no-results-text="Нет данных"
+          no-data-text="Нет подходящих событий"
+          no-results-text="Нет подходящих событий"
           :loading="$apollo.queries.events.loading"
           loading-text="Загружаем данные"
           dense
