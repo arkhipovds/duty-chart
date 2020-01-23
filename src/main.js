@@ -10,12 +10,13 @@ import VueApollo from "vue-apollo";
 import ApolloClient from "apollo-boost";
 
 Vue.config.productionTip = false;
-
 Vue.use(vuetify);
 Vue.use(VueApollo);
 
+const configuration = { apolloURI: "http://localhost:4000/" };
+
 const Client = new ApolloClient({
-  uri: "http://localhost:4000/"
+  uri: configuration.apolloURI
 });
 const apolloProvider = new VueApollo({
   defaultClient: Client

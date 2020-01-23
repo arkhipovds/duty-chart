@@ -4,6 +4,7 @@ import Home from "./views/Home.vue";
 import Chart from "./views/Chart.vue";
 import scorings from "./views/scorings.vue";
 import Employees from "./views/Employees.vue";
+import settings from "./views/settings.vue";
 import Login from "./views/Login.vue";
 
 Vue.use(Router);
@@ -29,6 +30,11 @@ export default new Router({
       path: "/employees",
       name: "employees",
       component: Employees
+    },
+    {
+      path: "/settings",
+      name: "settings",
+      component: settings
     },
     {
       path: "/login",

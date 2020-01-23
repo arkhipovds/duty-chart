@@ -50,7 +50,13 @@ export default {
           icon: "mdi-trending-up",
           title: "Показатели",
           route: "/scorings"
-        } /*
+        },
+        {
+          icon: "mdi-settings",
+          title: "Настройки",
+          route: "/settings"
+        }
+        /*
                     {
                         icon: 'mdi-login',
                         title: 'Войти',
