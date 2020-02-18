@@ -17,12 +17,12 @@
           <v-btn fab text small @click="prev">
             <v-icon>mdi-chevron-left</v-icon>
           </v-btn>
-          <!-- Текущие год и месяц -->
-          <v-toolbar-title>{{focus.slice(0,7)}}</v-toolbar-title>
           <!-- Кнопка "Вперед" -->
           <v-btn fab text small @click="next">
             <v-icon>mdi-chevron-right</v-icon>
           </v-btn>
+          <!-- Текущие год и месяц -->
+          <v-toolbar-title>{{displayedMonth}} {{focus.slice(0,4)}}</v-toolbar-title>
           <v-spacer></v-spacer>
           <!-- Кнопка "Пересчитать показатели сотрудников" -->
           <v-tooltip v-model="show1" bottom>
@@ -415,6 +415,24 @@ export default {
     };
   },
   computed: {
+    displayedMonth() {
+      let month = new Date(this.focus).getMonth();
+      let monthsNames = [
+        "январь",
+        "февраль",
+        "март",
+        "апрель",
+        "май",
+        "июнь",
+        "июль",
+        "август",
+        "сентябрь",
+        "октябрь",
+        "ноябрь",
+        "декабрь"
+      ];
+      return monthsNames[month];
+    },
     activeEmployees() {
       let newArray = [];
       if (this.employees) {

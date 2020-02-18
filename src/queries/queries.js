@@ -16,6 +16,12 @@ export const ALL_EVENTS_QUERY = gql`
     }
   }
 `;
+//Запрос самого свежего события в базе
+export const LAST_EVENT_TIME = gql`
+  query lastEventTime {
+    lastEventTime
+  }
+`;
 //Расчет показателей за месяц
 export const CALCULATE_SCORINGS = gql`
   mutation($TS: String!) {

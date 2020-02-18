@@ -2,64 +2,73 @@
   <div>
     <v-container fluid>
       <v-card class="elevation-12">
-        <!--
-  mongodb: {
-    DBHost: "10.76.70.51",
-    DBPort: "27017",
-    DBName: "test"
-  },
-  apolloURI: "http://localhost:4000/"
-
-  zabbix: {
-    host: "lms-db1-noc.unix.tensor.ru",
-    user: "alekseevea", //TODO: change login
-    password: process.argv[2] ? process.argv[2] : "defaultPassword",
-    database: "zabbix",
-    timeZoneOffset: 3 * 60 * 60 //на сколько нужно сдвинуть время в базе zabbix
-  },  
-  minStartOffset: 60 * 60 * 24 * 70, //глубина сбора данных при пустой БД (с)
-  delta: 60 * 60 * 12, //шаг выборки из БД (с)
-  interval: 5, //интервал между запросами к БД (с)  
-  cooldown: 60 * 60 * 12, //на сколько можно приближаться к настоящему времени при выкачивании данных (с)
-
-  maxAckTime: 60 * 10 //Макс. время реакции дежурного (с)
-  goodAckInTimePercent: 95, //устраивающий % подтверждения событий за месяц
-  
-        -->
-        <v-tabs background-color="white" color="deep-purple accent-4" right>
-          <v-tab>Бэкэнд</v-tab>
+        <v-tabs class="secondary" right>
           <v-tab>Zabbix</v-tab>
           <v-tab>Бизнес-логика</v-tab>
-
-          <v-tab-item v-for="n in 3" :key="n">
+          <!-- Вкладка zabbix  -->
+          <v-tab-item>
             <v-container fluid>
-              <v-row>
-                <v-col v-for="i in 6" :key="i" cols="12" md="4">
-                  <v-img
-                    :src="`https://picsum.photos/500/300?image=${i * n * 5 + 10}`"
-                    :lazy-src="`https://picsum.photos/10/6?image=${i * n * 5 + 10}`"
-                    aspect-ratio="1"
-                  ></v-img>
-                </v-col>
-              </v-row>
+              <v-text-field v-model="zabbix.host" label="Хост"></v-text-field>
+              <v-text-field v-model="zabbix.user" label="Логин"></v-text-field>
+              <v-text-field v-model="zabbix.password" label="Пароль" type="password"></v-text-field>
+              <v-text-field v-model="zabbix.database" label="База данных"></v-text-field>
+              <v-text-field
+                v-model="zabbix.timeZoneOffset"
+                label="Часовой пояс"
+                max="12"
+                min="-12"
+                step="1"
+                type="number"
+              ></v-text-field>
+              <v-text-field
+                v-model="zabbix.minStartOffset"
+                label="Глубина сбора данных при пустой БД (день)"
+                step="1"
+                min="60"
+                type="number"
+              ></v-text-field>
+              <v-text-field
+                v-model="zabbix.delta"
+                label="Размер выборки из БД (ч)"
+                step="1"
+                min="1"
+                type="number"
+              ></v-text-field>
+              <v-text-field
+                v-model="zabbix.interval"
+                label="Интервал между запросами к БД (с)"
+                step="1"
+                min="30"
+                type="number"
+              ></v-text-field>
+              <v-text-field
+                v-model="zabbix.cooldown"
+                label="На сколько можно приближаться к настоящему времени при выкачивании данных (ч)"
+                step="1"
+                min="1"
+                type="number"
+              ></v-text-field>
+            </v-container>
+          </v-tab-item>
+          <!-- Вкладка бизнес-логика  -->
+          <v-tab-item>
+            <v-container fluid>
+              <v-text-field
+                v-model="maxAckTime"
+                label="Допустимое время подтверждения события (ММ:СС)"
+                type="time"
+              ></v-text-field>
+              <v-slider
+                v-model="goodAckInTimePercent"
+                :thumb-size="24"
+                thumb-label="always"
+                min="80"
+                max="100"
+                label="Норма подтверждения"
+              ></v-slider>
             </v-container>
           </v-tab-item>
         </v-tabs>
-
-        <v-form>
-          <v-text-field label="учетная запись" name="login" prepend-icon="mdi-account" type="text"></v-text-field>
-          <v-text-field
-            id="password"
-            label="пароль"
-            name="password"
-            prepend-icon="mdi-lock-outline"
-            type="password"
-          ></v-text-field>
-        </v-form>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="primary">Войти</v-btn>
-        </v-card-actions>
       </v-card>
     </v-container>
   </div>
@@ -70,7 +79,20 @@ export default {
   data() {
     return {
       login: null,
-      password: null
+      password: null,
+      zabbix: {
+        host: "lms-db1-noc.unix.tensor.ru",
+        user: "user",
+        password: "defaultPassword",
+        database: "zabbix",
+        timeZoneOffset: 3, //* 60 * 60 на сколько нужно сдвинуть время в базе zabbix
+        minStartOffset: 60,
+        delta: 1,
+        interval: 30,
+        cooldown: 12
+      },
+      maxAckTime: "10:00",
+      goodAckInTimePercent: "95"
     };
   }
 };

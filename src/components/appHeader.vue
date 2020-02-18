@@ -13,7 +13,7 @@
     <v-app-bar dark app class="primary">
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" class="hidden-md-and-up"></v-app-bar-nav-icon>
       <router-link to="/" tag="span">
-        <v-toolbar-title v-text="'Дежурства отедла СПДиТ'"></v-toolbar-title>
+        <v-toolbar-title v-text="'Дежурства отдела СПДиТ'"></v-toolbar-title>
       </router-link>
       <v-spacer></v-spacer>
       <v-toolbar-items class="hidden-sm-and-down">
@@ -53,7 +53,7 @@ export default {
         },
         {
           icon: "mdi-settings",
-          title: "Настройки",
+          title: "Настройки - !!!в разработке!!!",
           route: "/settings"
         }
         /*
